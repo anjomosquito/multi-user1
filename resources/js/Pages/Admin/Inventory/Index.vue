@@ -3,22 +3,36 @@ import AuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
 
+const props = defineProps({
+    medicines: Array
+});
 
+ /*props: {
+    medicine: {
+      type: Object,
+      required: true
+    }
+}*/
+
+function confirmDelete(medicineId) {
+  if (confirm('Are you sure you want to delete this medicine?')) {
+    // Call the deleteMedicine method
+    deleteMedicine(medicineId);
+  }
+}
 </script>
 
 <template>
-    <Head title="Announcements" />
+    <Head title="Inventory" />
 
     <AuthenticatedLayout>
         <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Announcement Index</h2>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Inventory Index</h2>
         </template>
 
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <!--<div class="flex justify-end m-2 p-2">
-                    <Link :href="route('admin.announcements.create')" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded">Add Medicines</Link>
-                </div>-->
+                
                 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     
@@ -61,28 +75,28 @@ import { Link } from '@inertiajs/vue3';
                                 
                                 <tr v-for="medicine in medicines" :key="medicine.id"  class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700">
                                     <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        <!--{{ medicine.name }}-->
+                                        {{ medicine.name }}
                                     </th>
                                     <!--<td class="px-6 py-4">
                                         {{ medicine.price }}
                                     </td>-->
                                     <td class="px-6 py-4">
-                                        <!--{{ medicine.lprice }}-->
+                                        {{ medicine.lprice }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        <!--{{ medicine.mprice }}-->
+                                        {{ medicine.mprice }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        <!--{{ medicine.hprice }}-->
+                                        {{ medicine.hprice }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        <!--{{ medicine.quantity}}-->
+                                        {{ medicine.quantity}}
                                     </td>
                                     <td class="px-6 py-4">
-                                        <!--{{ medicine.dosage }}-->
+                                        {{ medicine.dosage }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        <!--{{ medicine.expdate }}-->
+                                        {{ medicine.expdate }}
                                     </td>
                                     <td class="flex px-6 py-4">
                                         <Link :href="'/admin/medicines/' + medicine.id + '/edit'" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">

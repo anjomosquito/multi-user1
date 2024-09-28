@@ -68,9 +68,9 @@ function confirmDelete(medicineId) {
                                     <th scope="col" class="px-6 py-3">
                                         Exp Date
                                     </th>
-                                    <th scope="col" class="px-6 py-3">
+                                    <!--<th scope="col" class="px-6 py-3">
                                         Actions
-                                    </th>
+                                    </th>-->
                                 </tr>
                             </thead>
                             <tbody>
@@ -100,14 +100,14 @@ function confirmDelete(medicineId) {
                                     <td class="px-6 py-4">
                                         {{ medicine.expdate }}
                                     </td>
-                                    <td class="flex px-6 py-4">
+                                    <!--<td class="flex px-6 py-4">
                                         <Link :href="'/admin/medicines/' + medicine.id + '/edit'" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">
                                         Edit
                                         </Link>
                                         <Link :href="`/admin/medicines/${medicine.id}`" method="delete" @click="confirmDelete(medicine.id)" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
                                             Delete
                                         </Link>
-                                    </td>
+                                    </td>-->
                                     
                                 </tr>
                                 

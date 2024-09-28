@@ -4,7 +4,7 @@ use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Admin\AdminAuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\MedicineController;
-use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\Admin\AdminInventoryController;
 use App\Http\Controllers\InventoryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -67,8 +67,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/admin/medicines/{medicine}/edit', [MedicineController::class, 'edit'])->name('admin.medicines.edit');
     Route::delete('/admin/medicines/{medicine}', [MedicineController::class, 'destroy'])->name('admin.medicines.destroy');
     
-    //Announcements
-    Route::get('/admin/announcements/index', [AnnouncementController::class, 'index'])->name('admin.announcements.index');
+    //Inventory
+    Route::get('/admin/admininventory/index', [AdminInventoryController::class, 'index'])->name('admin.admininventory.index');
 
 
     //Users
