@@ -6,6 +6,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\MedicineController;
 use App\Http\Controllers\Admin\AdminInventoryController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\ChatController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -70,12 +72,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
     //Inventory
     Route::get('/admin/admininventory/index', [AdminInventoryController::class, 'index'])->name('admin.admininventory.index');
 
-
+    //Message 
+   
     //Users
 
     Route::get('/medicines', [InventoryController::class, 'index'])->name('medicines.index');
     Route::post('/medicines/', [InventoryController::class, 'store'])->name('medicines.store');
 
+
+    //Cart
+    Route::middleware(['auth'])->group(function () {
+        Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+        Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+        Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
+    });
     
 
 
