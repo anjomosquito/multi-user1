@@ -49,10 +49,15 @@ import { Link } from '@inertiajs/vue3';
                                 <th scope="col" class="w-full px-6 py-3">
                                     Name
                                 </th>
-                                
-                                <th scope="col" class="px-6 py-3">
-                                    Actions
-                                </th>
+
+                                <td scope="col" class="flex px-6 py-4">
+                                    <Link :href="'' + ''" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded mr-2">
+                                        Show
+                                    </Link>
+                                    <Link :href="'' + ''" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">
+                                        Reply
+                                    </Link>
+                                </td>
                             </tr>
                         </table>
                     </div>
