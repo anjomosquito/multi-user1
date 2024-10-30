@@ -13,9 +13,9 @@
                       <tr>
                           <th class="px-6 py-3">Medicine Name</th>
                           <th class="px-6 py-3">Quantity</th>
-                          <th class="px-6 py-3">Low Price</th>
-                          <th class="px-6 py-3">Median Price</th>
-                          <th class="px-6 py-3">High Price</th>
+                          <!--<th class="px-6 py-3">Low Price</th>-->
+                          <th class="px-6 py-3">Price</th>
+                          <!--<th class="px-6 py-3">High Price</th>-->
                           <th class="px-6 py-3">Total Price</th>
                           <th class="px-6 py-3">Dosage</th>
                           <th class="px-6 py-3">Exp Date</th>
@@ -26,9 +26,9 @@
                       <tr v-for="item in cartItems" :key="item.id">
                           <td class="px-6 py-4">{{ item.name }}</td>
                           <td class="px-6 py-4">{{ item.quantity }}</td>
-                          <td class="px-6 py-4">{{ item.lprice }}</td>
+                          <!--<td class="px-6 py-4">{{ item.lprice }}</td>-->
                           <td class="px-6 py-4">{{ item.mprice }}</td>
-                          <td class="px-6 py-4">{{ item.hprice }}</td>
+                          <!--<td class="px-6 py-4">{{ item.hprice }}</td>-->
                           <td class="px-6 py-4">{{ item.mprice * item.quantity }}</td>
                           <td class="px-6 py-4">{{ item.dosage }}</td>
                           <td class="px-6 py-4">{{ item.expdate }}</td>

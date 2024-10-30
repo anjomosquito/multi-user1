@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\AdminAuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\MedicineController;
 use App\Http\Controllers\Admin\AdminInventoryController;
+use App\Http\Controllers\Admin\AdminChatController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChatController;
@@ -73,8 +75,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/admin/admininventory/index', [AdminInventoryController::class, 'index'])->name('admin.admininventory.index');
 
     //Message 
-   
-    //Users
+    Route::get('/admin/chat/index', [AdminChatController::class, 'index'])->name('admin.chat.index');
+
+    //UsersProfiles
+    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
+
 
     Route::get('/medicines', [InventoryController::class, 'index'])->name('medicines.index');
     Route::post('/medicines/', [InventoryController::class, 'store'])->name('medicines.store');

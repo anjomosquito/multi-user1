@@ -44,9 +44,14 @@ const showingNavigationDropdown = ref(false);
                                     Inventory
                                 </NavLink>
 
-                                
+                                <NavLink :href="route('admin.chat.index')" :active="route().current('admin.chat.index')">
+                                    Chat
+                                </NavLink>
 
-                                
+                                <NavLink :href="route('admin.users.index')" :active="route().current('admin.users.index')">
+                                    Users
+                                </NavLink>
+
                                
                             </div>
                         </div>
