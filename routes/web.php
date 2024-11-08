@@ -6,10 +6,12 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\MedicineController;
 use App\Http\Controllers\Admin\AdminInventoryController;
 use App\Http\Controllers\Admin\AdminChatController;
+use App\Http\Controllers\Admin\AdminPurchaseController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\PurchaseController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -92,6 +94,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
     });
     
+    //Purcahse
+    Route::get('/purchase/index', [PurchaseController::class, 'index'])->name('purchase.index');
+    Route::post('/purchase/order', [PurchaseController::class, 'store'])->name('purchase.store');
 
+    //Purchase ADMIN
+    Route::get('admin/purchase/index', [AdminPurchaseController::class, 'index'])->name('admin.purchase.index');
+
+    
 
 require __DIR__.'/auth.php';
