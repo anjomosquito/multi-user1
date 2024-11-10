@@ -18,4 +18,6 @@ class AdminPurchaseController extends Controller
             'purchases' => $purchases
         ]);
     }
+
+    
 }

@@ -41,9 +41,18 @@ class PurchaseController extends Controller
     public function index()
     {
         $purchases = Purchase::where('user_id', Auth::id())->get();
-    
+
         return Inertia::render('Purchase/Index', [
             'purchases' => $purchases
         ]);
     }
+    public function cancel($id)
+    {
+        // Find the purchase by ID and delete it if it exists
+        $purchase = Purchase::where('user_id', Auth::id())->findOrFail($id);
+        $purchase->delete();
+
+        return redirect()->route('purchase.index')->with('success', 'Purchase canceled successfully.');
+    }
+
 }

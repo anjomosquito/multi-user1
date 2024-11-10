@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\MedicineController;
 use App\Http\Controllers\Admin\AdminInventoryController;
 use App\Http\Controllers\Admin\AdminChatController;
 use App\Http\Controllers\Admin\AdminPurchaseController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\CartController;
@@ -75,7 +76,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     
     //Inventory
     Route::get('/admin/admininventory/index', [AdminInventoryController::class, 'index'])->name('admin.admininventory.index');
-
+    Route::get('/dashboard', [InventoryController::class, 'dashboard'])->name('dashboard');
     //Message 
     Route::get('/admin/chat/index', [AdminChatController::class, 'index'])->name('admin.chat.index');
 
@@ -97,10 +98,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
     //Purcahse
     Route::get('/purchase/index', [PurchaseController::class, 'index'])->name('purchase.index');
     Route::post('/purchase/order', [PurchaseController::class, 'store'])->name('purchase.store');
+    Route::delete('/purchase/cancel/{id}', [PurchaseController::class, 'cancel'])->name('purchase.cancel');
 
     //Purchase ADMIN
     Route::get('admin/purchase/index', [AdminPurchaseController::class, 'index'])->name('admin.purchase.index');
-
     
+
+    //ADMIN DASHBOARD
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
 require __DIR__.'/auth.php';

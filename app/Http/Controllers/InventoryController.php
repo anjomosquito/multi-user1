@@ -36,4 +36,16 @@ class InventoryController extends Controller
 
         return redirect()->route('medicines.index');
     }
+
+    public function dashboard()
+    {
+        // Get the count of medicines
+        $medicineCount = Medicine::count();
+
+        // Pass the medicine count to the dashboard view
+        return Inertia::render('Dashboard', [
+            'medicineCount' => $medicineCount
+        ]);
+    }
+
 }

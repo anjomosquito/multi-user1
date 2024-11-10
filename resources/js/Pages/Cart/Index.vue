@@ -1,6 +1,5 @@
 <template>
   <AuthenticatedLayout>
-
     <Head title="Cart" />
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-12">
@@ -12,10 +11,8 @@
             Your cart is empty.
           </div>
           <div class="animate-float">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 3h18M3 3l3 18h12l3-18M3 3l3 18h12l3-18" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18M3 3l3 18h12l3-18M3 3l3 18h12l3-18" />
             </svg>
           </div>
         </div>
@@ -37,7 +34,11 @@
           <tbody>
             <tr v-for="item in cartItems" :key="item.id" class="border-b hover:bg-gray-50 transition-colors">
               <td class="px-6 py-4">{{ item.name }}</td>
-              <td class="px-6 py-4">{{ item.quantity }}</td>
+              <td class="px-6 py-4 flex items-center">
+                <button @click="decrementQuantity(item)" class="px-2 py-1 bg-gray-300 rounded-l">-</button>
+                <span class="px-4">{{ item.quantity }}</span>
+                <button @click="incrementQuantity(item)" class="px-2 py-1 bg-gray-300 rounded-r">+</button>
+              </td>
               <td class="px-6 py-4">{{ item.mprice }}</td>
               <td class="px-6 py-4">{{ item.mprice * item.quantity }}</td>
               <td class="px-6 py-4">{{ item.dosage }}</td>
@@ -45,16 +46,13 @@
               <td class="px-6 py-4">
                 <Link :href="route('cart.destroy', item.id)" method="delete" as="button"
                   class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded mr-1">
-
-                Remove
+                  Remove
                 </Link>
                 <Link :href="route('purchase.store')" method="post" :data="{ cartItems: cartItems }" as="button"
                   class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">
-                Order
+                  Order
                 </Link>
-
               </td>
-
             </tr>
           </tbody>
         </table>
@@ -70,4 +68,14 @@ import { Link } from '@inertiajs/vue3';
 const props = defineProps({
   cartItems: Array,
 });
+
+const incrementQuantity = (item) => {
+  item.quantity++;
+};
+
+const decrementQuantity = (item) => {
+  if (item.quantity > 1) {
+    item.quantity--;
+  }
+};
 </script>

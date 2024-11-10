@@ -20,4 +20,5 @@ class AdminInventoryController extends Controller
             'medicines' => $medicines // Pass inventory data to the Vue component
         ]);
     }
+    
 }
