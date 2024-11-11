@@ -26,6 +26,14 @@ const { props } = usePage();
                             </div>
                         </div>
                     </div>
+                    <div class="col-span-12 md:col-span-3">
+                        <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                            <div class="p-6 text-gray-900 dark:text-gray-100">
+                                <h3 class="text-lg font-semibold">Total Purchases:</h3>
+                                <p>{{ props.purchaseCount }}</p>
+                            </div>
+                        </div>
+                    </div>
                     
                     <!-- You can add other sections here if needed -->
                 </div>

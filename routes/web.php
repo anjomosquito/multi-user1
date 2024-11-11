@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdminChatController;
 use App\Http\Controllers\Admin\AdminPurchaseController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\UserDashboardController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChatController;
@@ -106,5 +107,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     //ADMIN DASHBOARD
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
 
 require __DIR__.'/auth.php';

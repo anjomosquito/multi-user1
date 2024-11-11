@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Medicine;
+use App\Models\Purchase;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Redirect;
@@ -38,14 +40,19 @@ class InventoryController extends Controller
     }
 
     public function dashboard()
-    {
-        // Get the count of medicines
-        $medicineCount = Medicine::count();
+{
+    // Get the count of medicines
+    $medicineCount = Medicine::count();
 
-        // Pass the medicine count to the dashboard view
-        return Inertia::render('Dashboard', [
-            'medicineCount' => $medicineCount
-        ]);
-    }
+    // Get the count of purchases for the authenticated user
+    $purchaseCount = Purchase::where('user_id', Auth::id())->count();
+
+    // Pass both counts to the dashboard view
+    return Inertia::render('Dashboard', [
+        'medicineCount' => $medicineCount,
+        'purchaseCount' => $purchaseCount
+    ]);
+}
+
 
 }
