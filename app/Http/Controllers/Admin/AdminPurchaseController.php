@@ -13,12 +13,19 @@ class AdminPurchaseController extends Controller
     public function index()
     {
         // Retrieve purchases along with user info and group them by user_id
-        $purchases = Purchase::with('user') // Eager load the 'user' relation
+        $purchases = Purchase::with('user')
             ->get()
-            ->groupBy('user_id'); // Group by user_id instead of username
+            ->groupBy('user_id')
+            ->map(function ($userPurchases) {
+                $user = $userPurchases->first()->user; // Get the user info
+                return [
+                    'name' => $user->name,
+                    'purchases' => $userPurchases,
+                ];
+            });
 
         return Inertia::render('Admin/Purchase/Index', [
-            'purchases' => $purchases
+            'purchases' => $purchases,
         ]);
     }
 

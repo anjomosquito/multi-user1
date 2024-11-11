@@ -19,6 +19,7 @@ class Cart extends Model
         'hprice',
         'dosage',
         'expdate',
+        'username',
     ];
 
     // Relationship to the User

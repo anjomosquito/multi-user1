@@ -7,23 +7,20 @@
 
       <div v-if="Object.keys(purchases).length === 0" class="flex items-center justify-center h-64">
         <div class="flex flex-col items-center">
-          <div class="text-center text-gray-500 mb-4">
-            No purchases found.
-          </div>
+          <div class="text-center text-gray-500 mb-4">No purchases found.</div>
           <div class="animate-float">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 3h18M3 3l3 18h12l3-18M3 3l3 18h12l3-18" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18M3 3l3 18h12l3-18M3 3l3 18h12l3-18" />
             </svg>
           </div>
         </div>
       </div>
 
       <div v-else>
-        <div v-for="(userPurchases, userId) in purchases" :key="userId" class="mb-8">
-          <!-- Display username using the user relationship -->
-          <h3 class="text-lg font-bold mb-4">User: </h3>
+        <div v-for="(userGroup, userId) in purchases" :key="userId" class="mb-8">
+          <!-- Display username and user ID -->
+          <h3 class="text-lg font-bold mb-4">User: {{ userGroup.name }} (ID: {{ userId }})</h3>
+          
           <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg overflow-hidden mb-4">
             <thead class="bg-gray-100">
               <tr>
@@ -36,7 +33,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="purchase in userPurchases" :key="purchase.id" class="border-b hover:bg-gray-50 transition-colors">
+              <tr v-for="purchase in userGroup.purchases" :key="purchase.id" class="border-b hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-4">{{ purchase.name }}</td>
                 <td class="px-6 py-4">{{ purchase.quantity }}</td>
                 <td class="px-6 py-4">{{ purchase.mprice }}</td>
@@ -57,12 +54,6 @@ import AdminAuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 
 const props = defineProps({
-purchases: Object, // Expecting grouped purchases by user_id
+  purchases: Object, // Grouped by user_id, including name and purchases
 });
-
-console.log(props.purchases);
 </script>
-
-<style scoped>
-/* Add any custom styling here */
-</style>

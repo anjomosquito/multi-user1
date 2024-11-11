@@ -47,6 +47,7 @@ class CartController extends Controller
             'hprice' => $request->hprice,
             'dosage' => $request->dosage,
             'expdate' => $request->expdate,
+            'username' => $user->username,
         ]);
     }
 
