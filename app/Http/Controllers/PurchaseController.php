@@ -9,8 +9,6 @@ use App\Models\Cart;
 use App\Models\Medicine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Redirect;
 
 class PurchaseController extends Controller
 {
@@ -61,13 +59,23 @@ class PurchaseController extends Controller
             'purchases' => $purchases
         ]);
     }
+
     public function cancel($id)
     {
-        // Find the purchase by ID and delete it if it exists
+        // Find the purchase by ID
         $purchase = Purchase::where('user_id', Auth::id())->findOrFail($id);
+
+        // Retrieve the corresponding medicine and update its quantity
+        $medicine = Medicine::find($purchase->medicine_id);
+        
+        if ($medicine) {
+            // Increment the medicine's quantity in the inventory by the canceled purchase quantity
+            $medicine->increment('quantity', $purchase->quantity);
+        }
+
+        // Delete the purchase record
         $purchase->delete();
 
-        return redirect()->route('purchase.index')->with('success', 'Purchase canceled successfully.');
+        return redirect()->route('purchase.index')->with('success', 'Purchase canceled and inventory updated successfully.');
     }
-
 }
