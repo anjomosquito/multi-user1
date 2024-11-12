@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import Swal from 'sweetalert2';
 
 const props = defineProps({
     medicines: Array
@@ -19,48 +20,49 @@ const form = useForm({
 });
 
 function handleAddToCart(medicine) {
-  // Include medicine name and quantity in the confirmation dialog
-  const userConfirmed = confirm(`Are you sure you want to add ${medicine.name} (Quantity: ${medicine.quantity}) to your cart?`);
-  
-  if (userConfirmed) {
-    // Set the form data based on the selected medicine
-    form.medicine_id = medicine.id;
-    form.name = medicine.name;
-    form.lprice = medicine.lprice;
-    form.mprice = medicine.mprice;
-    form.hprice = medicine.hprice;
-    form.quantity = medicine.quantity; // Assuming quantity is managed in medicine
-    form.dosage = medicine.dosage;
-    form.expdate = medicine.expdate;
+  Swal.fire({
+    title: 'Add to Cart',
+    text: `Are you sure you want to add ${medicine.name} (Quantity: ${medicine.quantity}) to your cart?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Add to Cart',
+    confirmButtonColor: '#B5C99A',
+    cancelButtonColor: 'gray',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Set the form data based on the selected medicine
+      form.medicine_id = medicine.id;
+      form.name = medicine.name;
+      form.lprice = medicine.lprice;
+      form.mprice = medicine.mprice;
+      form.hprice = medicine.hprice;
+      form.quantity = medicine.quantity;
+      form.dosage = medicine.dosage;
+      form.expdate = medicine.expdate;
 
-    form.post(route('cart.store'), {
-      onSuccess: () => {
-        // Show success alert
-        const alertBox = document.createElement('div');
-        alertBox.innerText = 'Medicine added to your cart';
-        alertBox.style.position = 'fixed';
-        alertBox.style.top = '20px';
-        alertBox.style.left = '50%';
-        alertBox.style.transform = 'translateX(-50%)';
-        alertBox.style.backgroundColor = '#B5C99A';
-        alertBox.style.color = '#000';
-        alertBox.style.padding = '10px 15px';
-        alertBox.style.borderRadius = '5px';
-        alertBox.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
-        alertBox.style.zIndex = '1000';
-        alertBox.style.fontSize = '16px';
-        document.body.appendChild(alertBox);
-
-        setTimeout(() => {
-          document.body.removeChild(alertBox);
-        }, 3000);
-      },
-    });
-  }
+      form.post(route('cart.store'), {
+        onSuccess: () => {
+          Swal.fire({
+            icon: 'success',
+            title: 'Added!',
+            text: 'Medicine added to your cart successfully.',
+            timer: 3000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end',
+            background: '#B5C99A',
+            color: '#000'
+          });
+        },
+      });
+    }
+  });
 }
 
 const showingNavigationDropdown = ref(false);
 </script>
+
 
 <template>
     <AuthenticatedLayout>

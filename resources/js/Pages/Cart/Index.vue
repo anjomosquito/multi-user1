@@ -44,14 +44,12 @@
               <td class="px-6 py-4">{{ item.dosage }}</td>
               <td class="px-6 py-4">{{ item.expdate }}</td>
               <td class="px-6 py-4">
-                <Link :href="route('cart.destroy', item.id)" method="delete" as="button"
-                  class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded mr-1">
+                <button @click="confirmRemove(item)" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded mr-1">
                   Remove
-                </Link>
-                <Link :href="route('purchase.store')" method="post" :data="{ cartItems: cartItems }" as="button"
-                  class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">
+                </button>
+                <button @click="confirmOrder" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">
                   Order
-                </Link>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -63,7 +61,8 @@
 
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Link } from '@inertiajs/vue3';
+import Swal from 'sweetalert2';
+import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
   cartItems: Array,
@@ -78,4 +77,59 @@ const decrementQuantity = (item) => {
     item.quantity--;
   }
 };
+
+function confirmRemove(item) {
+  Swal.fire({
+    title: 'Remove Item',
+    text: `Are you sure you want to remove ${item.name} from your cart?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, remove it!',
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Proceed with removal via route
+      router.delete(route('cart.destroy', item.id), {
+        onSuccess: () => {
+          Swal.fire({
+            title: 'Removed!',
+            text: `${item.name} has been removed from your cart.`,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+      });
+    }
+  });
+}
+
+function confirmOrder() {
+  Swal.fire({
+    title: 'Place Order',
+    text: 'Are you sure you want to place this order?',
+    icon: 'info',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, order now!',
+    confirmButtonColor: '#28a745',
+    cancelButtonColor: '#f3f4f6',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      router.post(route('purchase.store'), { cartItems: props.cartItems }, {
+        onSuccess: () => {
+          Swal.fire({
+            title: 'Order Placed!',
+            text: 'Your purchase has been successfully completed.',
+            icon: 'success',
+            timer: 3000,
+            showConfirmButton: false
+          });
+        }
+      });
+    }
+  });
+}
 </script>
