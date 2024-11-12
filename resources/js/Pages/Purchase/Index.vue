@@ -40,7 +40,7 @@
               <td class="px-6 py-4">{{ purchase.mprice * purchase.quantity }}</td>
               <td class="px-6 py-4">{{ purchase.dosage }}</td>
               <td class="px-6 py-4">{{ purchase.expdate }}</td>
-              <td class="px-6 py-4"></td>   
+              <td class="px-6 py-4">{{ purchase.purchase_date }}</td>  <!-- Display purchase date -->
               <td class="px-6 py-4">
                 <button @click="confirmCancel(purchase)" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
                   Cancel

@@ -19,6 +19,7 @@ class Purchase extends Model
         'hprice',
         'dosage',
         'expdate',
+        'purchase_date',
     ];
     public function medicine()
     {

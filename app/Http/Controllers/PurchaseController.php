@@ -26,7 +26,7 @@ class PurchaseController extends Controller
                     // Decrease the quantity in the medicine's inventory
                     $medicine->decrement('quantity', $item['quantity']);
 
-                    // Create the purchase record
+                    // Create the purchase record and include the date/time
                     Purchase::create([
                         'user_id' => Auth::id(),
                         'medicine_id' => $item['medicine_id'],
@@ -37,6 +37,7 @@ class PurchaseController extends Controller
                         'hprice' => $item['hprice'],
                         'dosage' => $item['dosage'],
                         'expdate' => $item['expdate'],
+                        'purchase_date' => now(),  // Add the current date and time
                     ]);
                 } else {
                     // If quantity is insufficient, throw an exception to cancel the transaction
@@ -50,6 +51,7 @@ class PurchaseController extends Controller
 
         return redirect()->route('purchase.index')->with('success', 'Purchase completed successfully.');
     }
+
 
     public function index()
     {
@@ -67,7 +69,7 @@ class PurchaseController extends Controller
 
         // Retrieve the corresponding medicine and update its quantity
         $medicine = Medicine::find($purchase->medicine_id);
-        
+
         if ($medicine) {
             // Increment the medicine's quantity in the inventory by the canceled purchase quantity
             $medicine->increment('quantity', $purchase->quantity);

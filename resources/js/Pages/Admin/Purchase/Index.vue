@@ -30,6 +30,7 @@
                 <th class="px-6 py-3 text-left text-gray-600">Total Price</th>
                 <th class="px-6 py-3 text-left text-gray-600">Dosage</th>
                 <th class="px-6 py-3 text-left text-gray-600">Exp Date</th>
+                <th class="px-6 py-3 text-left text-gray-600">Purchase Date</th>
               </tr>
             </thead>
             <tbody>
@@ -40,6 +41,7 @@
                 <td class="px-6 py-4">{{ purchase.mprice * purchase.quantity }}</td>
                 <td class="px-6 py-4">{{ purchase.dosage }}</td>
                 <td class="px-6 py-4">{{ purchase.expdate }}</td>
+                <td class="px-6 py-4">{{ purchase.purchase_date }}</td>
               </tr>
             </tbody>
           </table>
