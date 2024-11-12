@@ -108,5 +108,31 @@ Route::prefix('admin')->name('admin.')->group(function () {
     //ADMIN DASHBOARD
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
+    Route::middleware(['auth:admin'])->group(function () {
+        Route::post('/admin/purchase/{id}/confirm', [AdminPurchaseController::class, 'confirm'])
+            ->name('admin.purchase.confirm');
+        Route::post('/admin/purchase/{id}/ready', [AdminPurchaseController::class, 'markAsReady'])
+            ->name('admin.purchase.ready');
+    });
 
 require __DIR__.'/auth.php';
+
+// Admin routes group
+Route::middleware(['auth:admin', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    // Purchase management routes
+    Route::prefix('purchase')->name('purchase.')->group(function () {
+        // View purchases
+        Route::get('index', [AdminPurchaseController::class, 'index'])
+            ->name('index');
+            
+        // Confirm purchase
+        Route::post('{id}/confirm', [AdminPurchaseController::class, 'confirm'])
+            ->name('confirm')
+            ->where('id', '[0-9]+');
+            
+        // Mark as ready for pickup
+        Route::post('{id}/ready', [AdminPurchaseController::class, 'markAsReady'])
+            ->name('ready')
+            ->where('id', '[0-9]+');
+    });
+});

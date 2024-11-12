@@ -1,50 +1,85 @@
 <template>
   <AdminAuthenticatedLayout>
-    <Head title="User Purchase History" />
+    <Head title="Purchase Management" />
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-12">
-      <h2 class="text-2xl font-semibold mb-6 text-center">User Purchase History</h2>
-
-      <div v-if="Object.keys(purchases).length === 0" class="flex items-center justify-center h-64">
-        <div class="flex flex-col items-center">
-          <div class="text-center text-gray-500 mb-4">No purchases found.</div>
-          <div class="animate-float">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18M3 3l3 18h12l3-18M3 3l3 18h12l3-18" />
-            </svg>
-          </div>
-        </div>
+      <!-- Flash Messages -->
+      <div v-if="showFlashMessages.success" 
+           class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        {{ showFlashMessages.success }}
       </div>
 
-      <div v-else>
-        <div v-for="(userGroup, userId) in purchases" :key="userId" class="mb-8">
-          <!-- Display username and user ID -->
-          <h3 class="text-lg font-bold mb-4">User: {{ userGroup.name }} (ID: {{ userId }})</h3>
-          
-          <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg overflow-hidden mb-4">
-            <thead class="bg-gray-100">
-              <tr>
-                <th class="px-6 py-3 text-left text-gray-600">Medicine Name</th>
-                <th class="px-6 py-3 text-left text-gray-600">Quantity</th>
-                <th class="px-6 py-3 text-left text-gray-600">Medium Price</th>
-                <th class="px-6 py-3 text-left text-gray-600">Total Price</th>
-                <th class="px-6 py-3 text-left text-gray-600">Dosage</th>
-                <th class="px-6 py-3 text-left text-gray-600">Exp Date</th>
-                <th class="px-6 py-3 text-left text-gray-600">Purchase Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="purchase in userGroup.purchases" :key="purchase.id" class="border-b hover:bg-gray-50 transition-colors">
-                <td class="px-6 py-4">{{ purchase.name }}</td>
-                <td class="px-6 py-4">{{ purchase.quantity }}</td>
-                <td class="px-6 py-4">{{ purchase.mprice }}</td>
-                <td class="px-6 py-4">{{ purchase.mprice * purchase.quantity }}</td>
-                <td class="px-6 py-4">{{ purchase.dosage }}</td>
-                <td class="px-6 py-4">{{ purchase.expdate }}</td>
-                <td class="px-6 py-4">{{ purchase.purchase_date }}</td>
-              </tr>
-            </tbody>
-          </table>
+      <div v-if="showFlashMessages.error"
+           class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {{ showFlashMessages.error }}
+      </div>
+
+      <div v-if="showFlashMessages.warning"
+           class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+        {{ showFlashMessages.warning }}
+      </div>
+
+      <div v-if="showFlashMessages.info"
+           class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4">
+        {{ showFlashMessages.info }}
+      </div>
+
+      <!-- Admin-only content -->
+      <div v-if="isAdmin">
+        Admin content here
+      </div>
+
+      <!-- Purchase List -->
+      <div v-for="(userGroup, userId) in purchases" :key="userId" class="mb-8">
+        <div v-for="purchase in userGroup.purchases" :key="purchase.id" 
+             class="bg-white shadow rounded-lg p-6 mb-4">
+          <div class="flex justify-between items-center">
+            <!-- Purchase Details -->
+            <div class="space-y-2">
+              <h3 class="text-lg font-semibold">{{ purchase.name }}</h3>
+              <p class="text-gray-600">Quantity: {{ purchase.quantity }}</p>
+              <p class="text-gray-600">
+                Status: 
+                <span :class="{
+                  'text-yellow-600': purchase.status === 'pending',
+                  'text-green-600': purchase.status === 'confirmed'
+                }" class="font-medium">
+                  {{ purchase.status }}
+                </span>
+              </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="space-x-2">
+              <button v-if="purchase.status === 'pending'"
+                      @click="confirmPurchase(purchase.id)"
+                      :disabled="isLoading(purchase.id)"
+                      class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             transition-colors duration-200">
+                <span v-if="isLoading(purchase.id)">
+                  Processing...
+                </span>
+                <span v-else>
+                  Confirm Purchase
+                </span>
+              </button>
+
+              <button v-if="purchase.status === 'confirmed' && !purchase.ready_for_pickup"
+                      @click="markAsReady(purchase.id)"
+                      :disabled="isLoading(purchase.id)"
+                      class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             transition-colors duration-200">
+                <span v-if="isLoading(purchase.id)">
+                  Processing...
+                </span>
+                <span v-else>
+                  Mark as Ready
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -52,10 +87,86 @@
 </template>
 
 <script setup>
+import { router } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import AdminAuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 
 const props = defineProps({
-  purchases: Object, // Grouped by user_id, including name and purchases
+  purchases: {
+    type: Object,
+    required: true,
+    default: () => ({})
+  }
 });
+
+// Access auth data
+const auth = computed(() => usePage().props.auth);
+const isAdmin = computed(() => auth.value.isAdmin);
+
+// Access flash messages
+const flash = computed(() => usePage().props.flash);
+
+// Access app settings
+const appName = computed(() => usePage().props.app.name);
+
+// Example usage of flash messages
+const showFlashMessages = computed(() => ({
+    success: flash.value.success,
+    error: flash.value.error,
+    warning: flash.value.warning,
+    info: flash.value.info,
+}));
+
+// Loading states
+const loadingStates = ref(new Set());
+
+function setLoading(id, isLoading) {
+  if (isLoading) {
+    loadingStates.value.add(id);
+  } else {
+    loadingStates.value.delete(id);
+  }
+}
+
+function isLoading(id) {
+  return loadingStates.value.has(id);
+}
+
+function confirmPurchase(purchaseId) {
+  if (confirm('Are you sure you want to confirm this purchase?')) {
+    setLoading(purchaseId, true);
+    
+    router.post(route('admin.purchase.confirm', purchaseId), {}, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setLoading(purchaseId, false);
+      },
+      onError: (errors) => {
+        setLoading(purchaseId, false);
+        console.error('Confirmation error:', errors);
+        alert('Failed to confirm purchase. Please try again.');
+      }
+    });
+  }
+}
+
+function markAsReady(purchaseId) {
+  if (confirm('Mark this purchase as ready for pickup?')) {
+    setLoading(purchaseId, true);
+    
+    router.post(route('admin.purchase.ready', purchaseId), {}, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setLoading(purchaseId, false);
+      },
+      onError: (errors) => {
+        setLoading(purchaseId, false);
+        console.error('Ready status error:', errors);
+        alert('Failed to mark purchase as ready. Please try again.');
+      }
+    });
+  }
+}
 </script>
