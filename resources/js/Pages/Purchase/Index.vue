@@ -28,6 +28,7 @@
               <th class="px-6 py-3 text-left text-gray-600">Total Price</th>
               <th class="px-6 py-3 text-left text-gray-600">Dosage</th>
               <th class="px-6 py-3 text-left text-gray-600">Exp Date</th>
+              <th class="px-6 py-3 text-left text-gray-600">Purchase Date</th>
               <th class="px-6 py-3 text-left text-gray-600">Action</th>
             </tr>
           </thead>
@@ -39,10 +40,11 @@
               <td class="px-6 py-4">{{ purchase.mprice * purchase.quantity }}</td>
               <td class="px-6 py-4">{{ purchase.dosage }}</td>
               <td class="px-6 py-4">{{ purchase.expdate }}</td>
+              <td class="px-6 py-4"></td>   
               <td class="px-6 py-4">
-                <Link :href="route('purchase.cancel', purchase.id)" method="delete" as="button" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
+                <button @click="confirmCancel(purchase)" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
                   Cancel
-                </Link>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -54,9 +56,42 @@
 
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
+import Swal from 'sweetalert2';
 
 const props = defineProps({
   purchases: Array,
 });
+
+function confirmCancel(purchase) {
+  Swal.fire({
+    title: 'Cancel Purchase',
+    text: `Are you sure you want to cancel this purchase of ${purchase.name}?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, cancel it!',
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    cancelButtonText: 'No, keep it'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Proceed with cancelation via route
+      router.delete(route('purchase.cancel', purchase.id), {
+        onSuccess: () => {
+          Swal.fire({
+            title: 'Cancelled!',
+            text: 'Your purchase has been successfully canceled.',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        }
+      });
+    }
+  });
+}
+
+function formatDate(dateString) {
+  return DateTime.fromISO(dateString, { zone: 'Asia/Kuala_Lumpur' }).toFormat('yyyy-MM-dd HH:mm:ss');
+}
 </script>

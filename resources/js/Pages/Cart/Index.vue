@@ -39,15 +39,15 @@
                 <span class="px-4">{{ item.quantity }}</span>
                 <button @click="incrementQuantity(item)" class="px-2 py-1 bg-gray-300 rounded-r">+</button>
               </td>
-              <td class="px-6 py-4">{{ item.mprice }}</td>
-              <td class="px-6 py-4">{{ item.mprice * item.quantity }}</td>
+              <td class="px-6 py-4">₱{{ item.mprice }}</td>
+              <td class="px-6 py-4">₱{{ item.mprice * item.quantity }}</td>
               <td class="px-6 py-4">{{ item.dosage }}</td>
               <td class="px-6 py-4">{{ item.expdate }}</td>
               <td class="px-6 py-4">
                 <button @click="confirmRemove(item)" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded mr-1">
                   Remove
                 </button>
-                <button @click="confirmOrder" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">
+                <button @click="confirmOrder" class="px-4 py-2 bg-[#28a745] hover:bg-green-600 text-white rounded">
                   Order
                 </button>
               </td>
@@ -114,7 +114,7 @@ function confirmOrder() {
     showCancelButton: true,
     confirmButtonText: 'Yes, order now!',
     confirmButtonColor: '#28a745',
-    cancelButtonColor: '#f3f4f6',
+    cancelButtonColor: 'gray',
     cancelButtonText: 'Cancel'
   }).then((result) => {
     if (result.isConfirmed) {

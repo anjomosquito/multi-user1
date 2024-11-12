@@ -26,7 +26,7 @@ function handleAddToCart(medicine) {
     icon: 'question',
     showCancelButton: true,
     confirmButtonText: 'Add to Cart',
-    confirmButtonColor: '#B5C99A',
+    confirmButtonColor: '#28a745',
     cancelButtonColor: 'gray',
     cancelButtonText: 'Cancel'
   }).then((result) => {
@@ -95,9 +95,9 @@ const showingNavigationDropdown = ref(false);
                                     class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700"
                                 >
                                     <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">{{ medicine.name }}</th>
-                                    <td class="px-6 py-4">{{ medicine.lprice }}</td>
-                                    <td class="px-6 py-4">{{ medicine.mprice }}</td>
-                                    <td class="px-6 py-4">{{ medicine.hprice }}</td>
+                                    <td class="px-6 py-4">₱{{ medicine.lprice }}</td>
+                                    <td class="px-6 py-4">₱{{ medicine.mprice }}</td>
+                                    <td class="px-6 py-4">₱{{ medicine.hprice }}</td>
                                     <td class="px-6 py-4">
                                         <!-- Quantity Selector -->
                                         <input
@@ -111,7 +111,7 @@ const showingNavigationDropdown = ref(false);
                                     <td class="px-6 py-4">{{ medicine.expdate }}</td>
                                     <td class="flex px-6 py-4">
                                         <Link
-                                            class="px-4 py-2 ml-4 bg-[#B5C99A] hover:bg-[#D2E0BE] text-black rounded"
+                                            class="px-4 py-2 ml-4 bg-[#28a745] hover:bg-[#D2E0BE] text-white rounded"
                                             @click.prevent="handleAddToCart(medicine)"
                                             href="#"
                                         >
