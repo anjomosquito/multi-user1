@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Purchase;
 use App\Models\Cart;
+use App\Models\Medicine;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Redirect;
@@ -14,28 +16,41 @@ class PurchaseController extends Controller
 {
     public function store(Request $request)
     {
-        // Get the cart items from the request
         $cartItems = $request->input('cartItems');
 
-        // Process each cart item and store it in the purchases table
-        foreach ($cartItems as $item) {
-            Purchase::create([
-                'user_id' => Auth::id(),
-                'medicine_id' => $item['medicine_id'],
-                'quantity' => $item['quantity'],
-                'name' => $item['name'],
-                'lprice' => $item['lprice'],
-                'mprice' => $item['mprice'],
-                'hprice' => $item['hprice'],
-                'dosage' => $item['dosage'],
-                'expdate' => $item['expdate'],
-            ]);
-        }
+        // Start a transaction to ensure data integrity
+        DB::transaction(function () use ($cartItems) {
+            foreach ($cartItems as $item) {
+                $medicine = Medicine::find($item['medicine_id']);
 
-        // Delete the items from the cart after purchase
-        Cart::where('user_id', Auth::id())->delete();
+                // Check if the requested quantity is available
+                if ($medicine && $medicine->quantity >= $item['quantity']) {
+                    // Decrease the quantity in the medicine's inventory
+                    $medicine->decrement('quantity', $item['quantity']);
 
-        return redirect()->route('purchase.index'); // Redirect to the purchase index page
+                    // Create the purchase record
+                    Purchase::create([
+                        'user_id' => Auth::id(),
+                        'medicine_id' => $item['medicine_id'],
+                        'quantity' => $item['quantity'],
+                        'name' => $item['name'],
+                        'lprice' => $item['lprice'],
+                        'mprice' => $item['mprice'],
+                        'hprice' => $item['hprice'],
+                        'dosage' => $item['dosage'],
+                        'expdate' => $item['expdate'],
+                    ]);
+                } else {
+                    // If quantity is insufficient, throw an exception to cancel the transaction
+                    throw new \Exception("Insufficient quantity for {$item['name']}");
+                }
+            }
+
+            // Delete the items from the cart after successful purchase
+            Cart::where('user_id', Auth::id())->delete();
+        });
+
+        return redirect()->route('purchase.index')->with('success', 'Purchase completed successfully.');
     }
 
     public function index()
