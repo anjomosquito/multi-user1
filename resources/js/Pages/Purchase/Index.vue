@@ -58,6 +58,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
+import { DateTime } from 'luxon';
 
 const props = defineProps({
   purchases: Array,
@@ -92,6 +93,6 @@ function confirmCancel(purchase) {
 }
 
 function formatDate(dateString) {
-  return DateTime.fromISO(dateString, { zone: 'Asia/Kuala_Lumpur' }).toFormat('yyyy-MM-dd HH:mm:ss');
+  return DateTime.fromISO(dateString, { zone: 'Asia/Singapore' }).toFormat('yyyy-MM-dd HH:mm:ss');
 }
 </script>
