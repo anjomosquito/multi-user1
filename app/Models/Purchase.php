@@ -22,7 +22,12 @@ class Purchase extends Model
         'confirmed_at',
         'confirmed_by',
         'ready_for_pickup',
-        'pickup_ready_at'
+        'pickup_ready_at',
+        'admin_pickup_verified',
+        'user_pickup_verified',
+        'admin_verified_at',
+        'user_verified_at',
+        'pickup_deadline'
     ];
 
     // Define status constants
@@ -72,6 +77,21 @@ class Purchase extends Model
     public function isReadyForPickup(): bool
     {
         return $this->ready_for_pickup;
+    }
+
+    public function isVerifiedByUser(): bool
+    {
+        return $this->user_pickup_verified;
+    }
+
+    public function isVerifiedByAdmin(): bool
+    {
+        return $this->admin_pickup_verified;
+    }
+
+    public function isFullyVerified(): bool
+    {
+        return $this->user_pickup_verified && $this->admin_pickup_verified;
     }
 
     // Status update methods

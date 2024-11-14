@@ -113,6 +113,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('admin.purchase.confirm');
         Route::post('/admin/purchase/{id}/ready', [AdminPurchaseController::class, 'markAsReady'])
             ->name('admin.purchase.ready');
+        Route::post('/admin/purchase/{id}/complete', [AdminPurchaseController::class, 'markAsCompleted'])
+            ->name('admin.purchase.complete');
+        Route::post('/admin/purchase/{id}/verify-pickup', [AdminPurchaseController::class, 'markAsPickedUp'])
+            ->name('admin.purchase.verify-pickup');
     });
 
 require __DIR__.'/auth.php';
@@ -134,5 +138,22 @@ Route::middleware(['auth:admin', 'verified'])->prefix('admin')->name('admin.')->
         Route::post('{id}/ready', [AdminPurchaseController::class, 'markAsReady'])
             ->name('ready')
             ->where('id', '[0-9]+');
+            
+        // Verify pickup completion
+        Route::post('{id}/verify-pickup', [AdminPurchaseController::class, 'verifyPickup'])
+            ->name('verify-pickup')
+            ->where('id', '[0-9]+');
     });
+});
+
+Route::middleware(['auth', 'admin'])->group(function () {
+    // ... other admin routes ...
+    Route::post('/admin/purchase/{id}/mark-ready', [AdminPurchaseController::class, 'markAsReady'])
+        ->name('admin.purchase.mark-ready');
+});
+
+// User routes
+Route::middleware(['auth'])->group(function () {
+    Route::post('/purchase/{id}/verify-pickup', [PurchaseController::class, 'verifyPickup'])
+        ->name('purchase.verify-pickup');
 });

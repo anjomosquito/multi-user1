@@ -12,77 +12,44 @@ class AdminPurchaseController extends Controller
 {
     public function index()
     {
-        try {
-            // Retrieve purchases with eager loading
-            $purchases = Purchase::with(['user', 'medicine'])
-                ->latest('created_at')
-                ->get()
-                ->groupBy('user_id')
-                ->map(function ($userPurchases) {
-                    $user = $userPurchases->first()->user;
-                    return [
-                        'name' => $user->name,
-                        'purchases' => $userPurchases->map(function ($purchase) {
-                            return [
-                                'id' => $purchase->id,
-                                'name' => $purchase->name,
-                                'quantity' => $purchase->quantity,
-                                'status' => $purchase->status,
-                                'ready_for_pickup' => $purchase->ready_for_pickup,
-                                'pickup_ready_at' => $purchase->pickup_ready_at,
-                                'confirmed_at' => $purchase->confirmed_at,
-                                'purchase_date' => $purchase->purchase_date,
-                                'dosage' => $purchase->dosage,
-                                'expdate' => $purchase->expdate,
-                                'lprice' => $purchase->lprice,
-                                'mprice' => $purchase->mprice,
-                                'hprice' => $purchase->hprice,
-                                'user' => [
-                                    'id' => $purchase->user->id,
-                                    'name' => $purchase->user->name,
-                                ],
-                                'medicine' => $purchase->medicine ? [
-                                    'id' => $purchase->medicine->id,
-                                    'name' => $purchase->medicine->name,
-                                ] : null,
-                            ];
-                        })->values()
-                    ];
-                });
+        $purchases = Purchase::with('user')
+            ->latest()
+            ->get()
+            ->map(function ($purchase) {
+                $pickup_deadline = $purchase->pickup_deadline ? \Carbon\Carbon::parse($purchase->pickup_deadline) : null;
+                $now = now();
+                
+                // Auto cancel if past deadline
+                if ($pickup_deadline && $now->isAfter($pickup_deadline) && $purchase->ready_for_pickup) {
+                    $this->cancelExpiredPickup($purchase);
+                    $purchase->refresh();
+                }
 
-            Log::info('Purchases index loaded successfully', [
-                'admin_id' => auth('admin')->id(),
-                'purchase_count' => $purchases->sum(function ($group) {
-                    return count($group['purchases']);
-                })
-            ]);
+                return [
+                    'id' => $purchase->id,
+                    'user' => $purchase->user ? [
+                        'id' => $purchase->user->id,
+                        'name' => $purchase->user->name,
+                    ] : null,
+                    'name' => $purchase->name,
+                    'quantity' => $purchase->quantity,
+                    'dosage' => $purchase->dosage,
+                    'total_amount' => $purchase->mprice * $purchase->quantity,
+                    'status' => $this->determineStatus($purchase),
+                    'ready_for_pickup' => $purchase->ready_for_pickup,
+                    'pickup_ready_at' => $purchase->pickup_ready_at,
+                    'pickup_deadline' => $purchase->pickup_deadline,
+                    'time_remaining' => $this->calculateTimeRemaining($purchase),
+                    'created_at' => $purchase->created_at,
+                    'admin_pickup_verified' => $purchase->admin_pickup_verified,
+                    'user_pickup_verified' => $purchase->user_pickup_verified,
+                    'verification_status' => $this->getVerificationStatus($purchase)
+                ];
+            });
 
-            return Inertia::render('Admin/Purchase/Index', [
-                'purchases' => $purchases,
-                'filters' => request()->all(['search', 'status', 'date']),
-            ]);
-
-        } catch (ModelNotFoundException $e) {
-            Log::error('Model not found in purchases index', [
-                'error' => $e->getMessage(),
-                'admin_id' => auth('admin')->id()
-            ]);
-
-            return back()->with('error', 'Required data not found. Please try again.');
-
-        } catch (\Exception $e) {
-            Log::error('Failed to load purchases index', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'admin_id' => auth('admin')->id()
-            ]);
-
-            $errorMessage = app()->environment('local') 
-                ? 'Failed to load purchases: ' . $e->getMessage()
-                : 'Failed to load purchases. Please try again.';
-
-            return back()->with('error', $errorMessage);
-        }
+        return Inertia::render('Admin/Purchase/Index', [
+            'purchases' => $purchases
+        ]);
     }
 
     public function confirm($id)
@@ -108,7 +75,6 @@ class AdminPurchaseController extends Controller
                 ]);
             });
 
-            // Log successful confirmation
             Log::info('Purchase confirmed successfully', [
                 'purchase_id' => $purchase->id,
                 'confirmed_by' => auth('admin')->id(),
@@ -124,83 +90,99 @@ class AdminPurchaseController extends Controller
             ]);
             
             return back()->with('error', 'Purchase not found');
-
-        } catch (\Exception $e) {
-            Log::error('Failed to confirm purchase', [
-                'purchase_id' => $id,
-                'error' => $e->getMessage(),
-                'admin_id' => auth('admin')->id(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            // In production, you might want to hide the actual error message
-            $errorMessage = app()->environment('local') 
-                ? 'Failed to confirm purchase: ' . $e->getMessage()
-                : 'Failed to confirm purchase. Please try again.';
-            
-            return back()->with('error', $errorMessage);
         }
     }
 
     public function markAsReady($id)
     {
-        try {
-            $purchase = Purchase::findOrFail($id);
-            
-            // Check if confirmed first
-            if ($purchase->status !== 'confirmed') {
-                Log::warning('Attempted to mark unconfirmed purchase as ready', [
-                    'purchase_id' => $id,
-                    'admin_id' => auth('admin')->id()
-                ]);
-                return back()->with('error', 'Purchase must be confirmed first');
-            }
-
-            if ($purchase->ready_for_pickup) {
-                Log::warning('Attempted to mark already ready purchase', [
-                    'purchase_id' => $id,
-                    'admin_id' => auth('admin')->id()
-                ]);
-                return back()->with('error', 'Purchase is already marked as ready');
-            }
-
-            \DB::transaction(function () use ($purchase) {
-                $purchase->update([
-                    'ready_for_pickup' => true,
-                    'pickup_ready_at' => now()
-                ]);
-            });
-
-            Log::info('Purchase marked as ready for pickup', [
-                'purchase_id' => $purchase->id,
-                'marked_by' => auth('admin')->id(),
-                'marked_at' => now()->toDateTimeString()
-            ]);
-
-            return back()->with('success', 'Purchase marked as ready for pickup');
-
-        } catch (ModelNotFoundException $e) {
-            Log::error('Purchase not found for marking ready', [
-                'purchase_id' => $id,
-                'admin_id' => auth('admin')->id()
-            ]);
-            
-            return back()->with('error', 'Purchase not found');
-
-        } catch (\Exception $e) {
-            Log::error('Failed to mark purchase as ready', [
-                'purchase_id' => $id,
-                'error' => $e->getMessage(),
-                'admin_id' => auth('admin')->id(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            $errorMessage = app()->environment('local') 
-                ? 'Failed to mark purchase as ready: ' . $e->getMessage()
-                : 'Failed to mark purchase as ready. Please try again.';
-            
-            return back()->with('error', $errorMessage);
+        $purchase = Purchase::findOrFail($id);
+        
+        if ($purchase->status !== 'confirmed') {
+            return redirect()->back()->with('error', 'Purchase must be confirmed first');
         }
+        
+        $now = now();
+        $pickup_deadline = $now->copy()->addHours(12);
+        
+        $purchase->update([
+            'ready_for_pickup' => true,
+            'pickup_ready_at' => $now,
+            'pickup_deadline' => $pickup_deadline
+        ]);
+
+        return redirect()->back()->with('success', 'Purchase marked as ready for pickup. Customer has 12 hours to pick up.');
+    }
+
+    public function markAsCompleted($id)
+    {
+        $purchase = Purchase::findOrFail($id);
+        
+        if (!$purchase->ready_for_pickup) {
+            return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
+        }
+        
+        $purchase->update([
+            'status' => 'completed',
+            'completed_at' => now()
+        ]);
+
+        return redirect()->back()->with('success', 'Purchase marked as completed.');
+    }
+
+    public function markAsPickedUp($id)
+    {
+        $purchase = Purchase::findOrFail($id);
+        
+        if (!$purchase->ready_for_pickup) {
+            return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
+        }
+
+        if (!$purchase->user_pickup_verified) {
+            return redirect()->back()->with('error', 'User must verify pickup first');
+        }
+        
+        \DB::transaction(function () use ($purchase) {
+            $purchase->update([
+                'admin_pickup_verified' => true,
+                'admin_verified_at' => now(),
+                'status' => 'completed',
+                'completed_at' => now(),
+                'ready_for_pickup' => false
+            ]);
+        });
+
+        return redirect()->back()->with('success', 'Pickup verified and order completed.');
+    }
+
+    public function verifyPickup($id)
+    {
+        $purchase = Purchase::findOrFail($id);
+        
+        if (!$purchase->ready_for_pickup) {
+            return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
+        }
+
+        if (!$purchase->user_pickup_verified) {
+            return redirect()->back()->with('error', 'User must verify pickup first');
+        }
+        
+        \DB::transaction(function () use ($purchase) {
+            $purchase->update([
+                'admin_pickup_verified' => true,
+                'admin_verified_at' => now(),
+                'status' => 'completed',
+                'completed_at' => now(),
+                'ready_for_pickup' => false
+            ]);
+        });
+
+        Log::info('Admin verified pickup completion', [
+            'purchase_id' => $purchase->id,
+            'admin_id' => auth('admin')->id(),
+            'user_id' => $purchase->user_id
+        ]);
+
+        return redirect()->back()->with('success', 'Pickup verified and order completed.');
     }
 
     protected function formatPurchase($purchase)
@@ -220,5 +202,84 @@ class AdminPurchaseController extends Controller
             'mprice' => $purchase->mprice,
             'hprice' => $purchase->hprice,
         ];
+    }
+
+    private function calculateTimeRemaining($purchase)
+    {
+        if (!$purchase->pickup_deadline || !$purchase->ready_for_pickup) {
+            return null;
+        }
+
+        $now = now();
+        $deadline = \Carbon\Carbon::parse($purchase->pickup_deadline);
+
+        if ($now->isAfter($deadline)) {
+            return 'Expired';
+        }
+
+        $minutes = $now->diffInMinutes($deadline, false);
+        $hours = floor($minutes / 60);
+        $remainingMinutes = $minutes % 60;
+
+        return sprintf('%02d:%02d hours remaining', $hours, $remainingMinutes);
+    }
+
+    private function cancelExpiredPickup($purchase)
+    {
+        // Return medicine to inventory
+        $medicine = Medicine::find($purchase->medicine_id);
+        if ($medicine) {
+            $medicine->increment('quantity', $purchase->quantity);
+        }
+
+        // Update purchase status
+        $purchase->update([
+            'status' => 'cancelled',
+            'ready_for_pickup' => false,
+            'pickup_ready_at' => null,
+            'pickup_deadline' => null
+        ]);
+
+        Log::info('Purchase auto-cancelled due to pickup deadline', [
+            'purchase_id' => $purchase->id,
+            'user_id' => $purchase->user_id
+        ]);
+    }
+
+    private function determineStatus($purchase)
+    {
+        if ($purchase->status === 'cancelled') {
+            return 'cancelled';
+        }
+        if ($purchase->status === 'completed') {
+            return 'completed';
+        }
+        if ($purchase->user_pickup_verified && !$purchase->admin_pickup_verified) {
+            return 'verified';
+        }
+        if ($purchase->ready_for_pickup) {
+            return 'ready_for_pickup';
+        }
+        if ($purchase->status === 'confirmed') {
+            return 'confirmed';
+        }
+        return 'pending';
+    }
+
+    private function getVerificationStatus($purchase)
+    {
+        if ($purchase->status === 'completed') {
+            return 'completed';
+        }
+        if ($purchase->user_pickup_verified && !$purchase->admin_pickup_verified) {
+            return 'verified_by_user';
+        }
+        if ($purchase->admin_pickup_verified && !$purchase->user_pickup_verified) {
+            return 'waiting_user';
+        }
+        if ($purchase->ready_for_pickup) {
+            return 'ready';
+        }
+        return null;
     }
 }

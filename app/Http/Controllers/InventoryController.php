@@ -40,19 +40,58 @@ class InventoryController extends Controller
     }
 
     public function dashboard()
-{
-    // Get the count of medicines
-    $medicineCount = Medicine::count();
+    {
+        $user = Auth::user();
+        
+        // Get user-specific data
+        $medicineCount = Medicine::count();
+        $purchaseCount = Purchase::where('user_id', $user->id)->count();
+        
+        // Get recent purchases with medicine details
+        $recentPurchases = Purchase::where('user_id', $user->id)
+            ->with('medicine')
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($purchase) {
+                return [
+                    'id' => $purchase->id,
+                    'medicine' => $purchase->medicine,
+                    'name' => $purchase->name,
+                    'created_at' => $purchase->created_at,
+                    'quantity' => $purchase->quantity,
+                    'status' => $purchase->status ?? 'pending',
+                    'total_amount' => $purchase->mprice * $purchase->quantity
+                ];
+            });
 
-    // Get the count of purchases for the authenticated user
-    $purchaseCount = Purchase::where('user_id', Auth::id())->count();
+        // Get available medicines (in stock)
+        $availableMedicines = Medicine::where('quantity', '>', 0)
+            ->latest()
+            ->take(6)
+            ->get();
 
-    // Pass both counts to the dashboard view
-    return Inertia::render('Dashboard', [
-        'medicineCount' => $medicineCount,
-        'purchaseCount' => $purchaseCount
-    ]);
-}
+        // Get medicines with special prices
+        $promoMedicines = Medicine::whereRaw('mprice < hprice * 0.8')
+            ->where('quantity', '>', 0)
+            ->latest()
+            ->take(4)
+            ->get();
+
+        $totalSpent = Purchase::where('user_id', $user->id)
+            ->where('status', 'completed')
+            ->selectRaw('SUM(mprice * quantity) as total_spent')
+            ->value('total_spent') ?? 0;
+
+        return Inertia::render('Dashboard', [
+            'medicineCount' => $medicineCount,
+            'purchaseCount' => $purchaseCount,
+            'recentPurchases' => $recentPurchases,
+            'totalSpent' => $totalSpent,
+            'availableMedicines' => $availableMedicines,
+            'promoMedicines' => $promoMedicines
+        ]);
+    }
 
 
 }

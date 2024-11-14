@@ -26,7 +26,7 @@ class PurchaseController extends Controller
                     // Decrease the quantity in the medicine's inventory
                     $medicine->decrement('quantity', $item['quantity']);
 
-                    // Create the purchase record and include the date/time
+                    // Create the purchase record with pending status
                     Purchase::create([
                         'user_id' => Auth::id(),
                         'medicine_id' => $item['medicine_id'],
@@ -37,7 +37,8 @@ class PurchaseController extends Controller
                         'hprice' => $item['hprice'],
                         'dosage' => $item['dosage'],
                         'expdate' => $item['expdate'],
-                        'purchase_date' => now(),  // Add the current date and time
+                        'purchase_date' => now(),
+                        'status' => 'pending', // Changed from 'completed' to 'pending'
                     ]);
                 } else {
                     // If quantity is insufficient, throw an exception to cancel the transaction
@@ -52,10 +53,31 @@ class PurchaseController extends Controller
         return redirect()->route('purchase.index')->with('success', 'Purchase completed successfully.');
     }
 
-
     public function index()
     {
-        $purchases = Purchase::where('user_id', Auth::id())->get();
+        $purchases = Purchase::where('user_id', Auth::id())
+            ->latest()
+            ->get()
+            ->map(function ($purchase) {
+                return [
+                    'id' => $purchase->id,
+                    'name' => $purchase->name,
+                    'quantity' => $purchase->quantity,
+                    'mprice' => $purchase->mprice,
+                    'total_amount' => $purchase->mprice * $purchase->quantity,
+                    'dosage' => $purchase->dosage,
+                    'expdate' => $purchase->expdate,
+                    'purchase_date' => $purchase->purchase_date,
+                    'status' => $purchase->status,
+                    'ready_for_pickup' => $purchase->ready_for_pickup,
+                    'pickup_ready_at' => $purchase->pickup_ready_at,
+                    'pickup_deadline' => $purchase->pickup_deadline,
+                    'created_at' => $purchase->created_at,
+                    'admin_pickup_verified' => $purchase->admin_pickup_verified,
+                    'user_pickup_verified' => $purchase->user_pickup_verified,
+                    'time_remaining' => $this->calculateTimeRemaining($purchase)
+                ];
+            });
 
         return Inertia::render('Purchase/Index', [
             'purchases' => $purchases
@@ -66,6 +88,12 @@ class PurchaseController extends Controller
     {
         // Find the purchase by ID
         $purchase = Purchase::where('user_id', Auth::id())->findOrFail($id);
+
+        // Only allow cancellation of pending purchases
+        if ($purchase->status === 'completed') {
+            return redirect()->route('purchase.index')
+                ->with('error', 'Cannot cancel completed purchases.');
+        }
 
         // Retrieve the corresponding medicine and update its quantity
         $medicine = Medicine::find($purchase->medicine_id);
@@ -78,6 +106,58 @@ class PurchaseController extends Controller
         // Delete the purchase record
         $purchase->delete();
 
-        return redirect()->route('purchase.index')->with('success', 'Purchase canceled and inventory updated successfully.');
+        return redirect()->route('purchase.index')
+            ->with('success', 'Purchase canceled and inventory updated successfully.');
+    }
+
+    public function verifyPickup($id)
+    {
+        $purchase = Purchase::where('user_id', Auth::id())->findOrFail($id);
+        
+        if (!$purchase->ready_for_pickup) {
+            return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
+        }
+        
+        \DB::transaction(function () use ($purchase) {
+            $purchase->update([
+                'user_pickup_verified' => true,
+                'user_verified_at' => now()
+            ]);
+
+            // Check if admin has already verified
+            if ($purchase->admin_pickup_verified) {
+                $purchase->update([
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                    'ready_for_pickup' => false
+                ]);
+            }
+        });
+
+        if ($purchase->admin_pickup_verified) {
+            return redirect()->back()->with('success', 'Pickup verified and order completed.');
+        }
+        
+        return redirect()->back()->with('success', 'Pickup verified. Waiting for admin verification.');
+    }
+
+    private function calculateTimeRemaining($purchase)
+    {
+        if (!$purchase->pickup_deadline || !$purchase->ready_for_pickup) {
+            return null;
+        }
+
+        $now = now();
+        $deadline = \Carbon\Carbon::parse($purchase->pickup_deadline);
+
+        if ($now->isAfter($deadline)) {
+            return 'Expired';
+        }
+
+        $minutes = $now->diffInMinutes($deadline, false);
+        $hours = floor($minutes / 60);
+        $remainingMinutes = $minutes % 60;
+
+        return sprintf('%02d:%02d hours remaining', $hours, $remainingMinutes);
     }
 }
