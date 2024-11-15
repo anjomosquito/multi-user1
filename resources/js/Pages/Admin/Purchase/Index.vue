@@ -57,6 +57,10 @@
                 v-for="purchase in userGroup.purchases"
                 :key="purchase.id"
                 class="border-b hover:bg-gray-50 transition-colors"
+                :class="{
+                  'bg-green-100': purchase.status === 'accepted',
+                  'bg-red-100': purchase.status === 'rejected',
+                }"
               >
                 <td class="px-6 py-4">{{ purchase.name }}</td>
                 <td class="px-6 py-4">{{ purchase.quantity }}</td>
@@ -65,18 +69,29 @@
                 <td class="px-6 py-4">{{ purchase.dosage }}</td>
                 <td class="px-6 py-4">{{ purchase.expdate }}</td>
                 <td class="px-6 py-4">{{ purchase.purchase_date }}</td>
-                <td scope="col" class="flex px-6 py-4">
+                <td scope="col" class="flex px-6 py-4 space-x-2">
+                  <!-- Buttons for actions, always visible -->
                   <Link
-                    @click.prevent="acceptPurchase(purchase.id)"
-                    class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded mr-2"
+                    @click.prevent="confirmAction(purchase, 'accept')"
+                    :class="[
+                      purchase.status === 'accepted'
+                        ? 'bg-green-200 text-green-800'
+                        : 'bg-green-500 hover:bg-green-600 text-white',
+                      'px-4 py-2 rounded',
+                    ]"
                   >
-                    Accept
+                    {{ purchase.status === "accepted" ? "Re-accept" : "Accept" }}
                   </Link>
                   <Link
-                    @click.prevent="rejectPurchase(purchase.id)"
-                    class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded"
+                    @click.prevent="confirmAction(purchase, 'reject')"
+                    :class="[
+                      purchase.status === 'rejected'
+                        ? 'bg-red-200 text-red-800'
+                        : 'bg-red-500 hover:bg-red-600 text-white',
+                      'px-4 py-2 rounded',
+                    ]"
                   >
-                    Reject
+                    {{ purchase.status === "rejected" ? "Re-reject" : "Reject" }}
                   </Link>
                 </td>
               </tr>
@@ -94,10 +109,35 @@ import { Head } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
 import { ref } from "vue";
 import { Inertia } from "@inertiajs/inertia";
+import Swal from "sweetalert2"; // Import SweetAlert2
 
 const props = defineProps({
   purchases: Object, // Grouped by user_id, including name and purchases
 });
+
+// Function to confirm the action
+const confirmAction = (purchase, actionType) => {
+  const actionText = actionType === "accept" ? "Accept" : "Reject";
+  const confirmMessage = `Are you sure you want to ${actionText} this purchase?`;
+
+  Swal.fire({
+    title: "Are you sure?",
+    text: confirmMessage,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: actionType === "accept" ? "#3085d6" : "#d33",
+    cancelButtonColor: "#aaa",
+    confirmButtonText: actionType === "accept" ? "Yes, Accept" : "Yes, Reject",
+  }).then((result) => {
+    if (result.isConfirmed) {
+      if (actionType === "accept") {
+        acceptPurchase(purchase.id); // Proceed with acceptance
+      } else {
+        rejectPurchase(purchase.id); // Proceed with rejection
+      }
+    }
+  });
+};
 
 const acceptPurchase = (id) => {
   Inertia.post(
@@ -106,7 +146,11 @@ const acceptPurchase = (id) => {
     {
       preserveState: false,
       onSuccess: () => {
-        // Optionally show a success message
+        // Update the purchase status after acceptance
+        const purchase = findPurchaseById(id);
+        if (purchase) {
+          purchase.status = purchase.status === "accepted" ? "pending" : "accepted"; // Toggle status
+        }
       },
     }
   );
@@ -119,9 +163,23 @@ const rejectPurchase = (id) => {
     {
       preserveState: false,
       onSuccess: () => {
-        // Optionally show a success message
+        // Update the purchase status after rejection
+        const purchase = findPurchaseById(id);
+        if (purchase) {
+          purchase.status = purchase.status === "rejected" ? "pending" : "rejected"; // Toggle status
+        }
       },
     }
   );
+};
+
+// Helper to find purchase by id
+const findPurchaseById = (id) => {
+  for (const userId in props.purchases) {
+    const userGroup = props.purchases[userId];
+    const purchase = userGroup.purchases.find((purchase) => purchase.id === id);
+    if (purchase) return purchase;
+  }
+  return null;
 };
 </script>

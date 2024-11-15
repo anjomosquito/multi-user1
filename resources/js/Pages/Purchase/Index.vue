@@ -64,13 +64,14 @@
               <td class="px-6 py-4">{{ purchase.purchase_date }}</td>
               <td class="px-6 py-4">
                 <button
-                  v-if="purchase.status !== 'rejected'"
+                  v-if="purchase.status === 'pending'"
                   @click="confirmCancel(purchase)"
                   class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded"
                 >
                   Cancel
                 </button>
               </td>
+
               <td class="px-6 py-4">
                 <span v-if="purchase.status === 'pending'" class="text-yellow-500"
                   >Pending</span
