@@ -53,7 +53,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         return Inertia::render('Admin/Dashboard');
     })->middleware(['auth:admin', 'verified:admin'])->name('dashboard');
 
-    
+
 
     Route::middleware('auth:admin')->group(function () {
         Route::get('/profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
@@ -64,49 +64,51 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 });
 
-    //Medicine
-    /*Route::get('/admin.medicines', function () {
-    return Inertia::render('Admin/Medicines/Index');
-    })->name('admin.medicines');*/
-    Route::get('/admin/medicines/index', [MedicineController::class, 'index'])->name('admin.medicines.index');
-    Route::post('/admin/medicines/', [MedicineController::class, 'store'])->name('admin.medicines.store');
-    Route::get('/admin/medicines/create', [MedicineController::class, 'create'])->name('admin.medicines.create');    
-    Route::put('/admin/medicines/{medicine}', [MedicineController::class, 'update'])->name('admin.medicines.update');
-    Route::get('/admin/medicines/{medicine}/edit', [MedicineController::class, 'edit'])->name('admin.medicines.edit');
-    Route::delete('/admin/medicines/{medicine}', [MedicineController::class, 'destroy'])->name('admin.medicines.destroy');
-    
-    //Inventory
-    Route::get('/admin/admininventory/index', [AdminInventoryController::class, 'index'])->name('admin.admininventory.index');
-    Route::get('/dashboard', [InventoryController::class, 'dashboard'])->name('dashboard');
-    //Message 
-    Route::get('/admin/chat/index', [AdminChatController::class, 'index'])->name('admin.chat.index');
+//Medicine
+/*Route::get('/admin.medicines', function () {
+return Inertia::render('Admin/Medicines/Index');
+})->name('admin.medicines');*/
+Route::get('/admin/medicines/index', [MedicineController::class, 'index'])->name('admin.medicines.index');
+Route::post('/admin/medicines/', [MedicineController::class, 'store'])->name('admin.medicines.store');
+Route::get('/admin/medicines/create', [MedicineController::class, 'create'])->name('admin.medicines.create');
+Route::put('/admin/medicines/{medicine}', [MedicineController::class, 'update'])->name('admin.medicines.update');
+Route::get('/admin/medicines/{medicine}/edit', [MedicineController::class, 'edit'])->name('admin.medicines.edit');
+Route::delete('/admin/medicines/{medicine}', [MedicineController::class, 'destroy'])->name('admin.medicines.destroy');
 
-    //UsersProfiles
-    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
+//Inventory
+Route::get('/admin/admininventory/index', [AdminInventoryController::class, 'index'])->name('admin.admininventory.index');
+Route::get('/dashboard', [InventoryController::class, 'dashboard'])->name('dashboard');
+//Message 
+Route::get('/admin/chat/index', [AdminChatController::class, 'index'])->name('admin.chat.index');
 
-
-    Route::get('/medicines', [InventoryController::class, 'index'])->name('medicines.index');
-    Route::post('/medicines/', [InventoryController::class, 'store'])->name('medicines.store');
+//UsersProfiles
+Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
 
 
-    //Cart
-    Route::middleware(['auth'])->group(function () {
-        Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
-        Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-        Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
-    });
-    
-    //Purcahse
-    Route::get('/purchase/index', [PurchaseController::class, 'index'])->name('purchase.index');
-    Route::post('/purchase/order', [PurchaseController::class, 'store'])->name('purchase.store');
-    Route::delete('/purchase/cancel/{id}', [PurchaseController::class, 'cancel'])->name('purchase.cancel');
-
-    //Purchase ADMIN
-    Route::get('admin/purchase/index', [AdminPurchaseController::class, 'index'])->name('admin.purchase.index');
-    
-
-    //ADMIN DASHBOARD
-    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+Route::get('/medicines', [InventoryController::class, 'index'])->name('medicines.index');
+Route::post('/medicines/', [InventoryController::class, 'store'])->name('medicines.store');
 
 
-require __DIR__.'/auth.php';
+//Cart
+Route::middleware(['auth'])->group(function () {
+    Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+    Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
+});
+
+//Purcahse
+Route::get('/purchase/index', [PurchaseController::class, 'index'])->name('purchase.index');
+Route::post('/purchase/order', [PurchaseController::class, 'store'])->name('purchase.store');
+Route::delete('/purchase/cancel/{id}', [PurchaseController::class, 'cancel'])->name('purchase.cancel');
+
+//Purchase ADMIN
+Route::get('admin/purchase/index', [AdminPurchaseController::class, 'index'])->name('admin.purchase.index');
+Route::post('admin/purchase/{id}/accept', [AdminPurchaseController::class, 'acceptPurchase'])->name('admin.purchase.accept');
+Route::post('admin/purchase/{id}/reject', [AdminPurchaseController::class, 'rejectPurchase'])->name('admin.purchase.reject');
+
+
+//ADMIN DASHBOARD
+Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+
+
+require __DIR__ . '/auth.php';

@@ -67,13 +67,13 @@
                 <td class="px-6 py-4">{{ purchase.purchase_date }}</td>
                 <td scope="col" class="flex px-6 py-4">
                   <Link
-                    :href="'' + ''"
+                    @click.prevent="acceptPurchase(purchase.id)"
                     class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded mr-2"
                   >
                     Accept
                   </Link>
                   <Link
-                    :href="'' + ''"
+                    @click.prevent="rejectPurchase(purchase.id)"
                     class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded"
                   >
                     Reject
@@ -92,8 +92,36 @@
 import AdminAuthenticatedLayout from "@/Layouts/AdminAuthenticatedLayout.vue";
 import { Head } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
+import { ref } from "vue";
+import { Inertia } from "@inertiajs/inertia";
 
 const props = defineProps({
   purchases: Object, // Grouped by user_id, including name and purchases
 });
+
+const acceptPurchase = (id) => {
+  Inertia.post(
+    route("admin.purchase.accept", id),
+    {},
+    {
+      preserveState: false,
+      onSuccess: () => {
+        // Optionally show a success message
+      },
+    }
+  );
+};
+
+const rejectPurchase = (id) => {
+  Inertia.post(
+    route("admin.purchase.reject", id),
+    {},
+    {
+      preserveState: false,
+      onSuccess: () => {
+        // Optionally show a success message
+      },
+    }
+  );
+};
 </script>

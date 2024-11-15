@@ -6,6 +6,7 @@ use App\Models\Purchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Redirect;
 
 class AdminPurchaseController extends Controller
 {
@@ -29,5 +30,21 @@ class AdminPurchaseController extends Controller
         ]);
     }
 
-    
+    public function acceptPurchase($purchaseId)
+    {
+        $purchase = Purchase::find($purchaseId);
+        $purchase->status = 'accepted';
+        $purchase->save();
+
+        return Redirect::route('admin.purchase.index')->with('status', 'Purchase accepted');
+    }
+
+    public function rejectPurchase($purchaseId)
+    {
+        $purchase = Purchase::find($purchaseId);
+        $purchase->status = 'rejected';
+        $purchase->save();
+
+        return Redirect::route('admin.purchase.index')->with('status', 'Purchase rejected');
+    }
 }

@@ -5,7 +5,7 @@
         "build": "vite build"
     },
     "devDependencies": {
-        "@inertiajs/vue3": "^1.0.0",
+        "@inertiajs/vue3": "^1.2.0",
         "@tailwindcss/forms": "^0.5.3",
         "@vitejs/plugin-vue": "^4.0.0",
         "autoprefixer": "^10.4.12",
@@ -18,6 +18,7 @@
     },
     "dependencies": {
         "@fortawesome/fontawesome-free": "^6.6.0",
+        "@inertiajs/inertia": "^0.11.1",
         "bootstrap-icons": "^1.11.3",
         "dayjs": "^1.11.13",
         "dayjs-plugin-utc": "^0.1.2",

@@ -20,6 +20,8 @@
                 $table->string('dosage');
                 $table->date('expdate');
                 $table->timestamp('purchase_date')->default(DB::raw('CURRENT_TIMESTAMP'));
+                $table->string('status')->default('pending');
+
                 $table->timestamps();
 
                 $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
