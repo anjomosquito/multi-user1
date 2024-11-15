@@ -55,11 +55,15 @@
                   'bg-green-100 text-green-800': purchase.status === 'completed',
                   'bg-red-100 text-red-800': purchase.status === 'cancelled'
                 }">
-                  {{ purchase.status }}
+                  {{ formatStatus(purchase.status) }}
                 </span>
               </td>
               <td class="px-6 py-4">
-                <div v-if="purchase.ready_for_pickup" class="space-y-2">
+                <div v-if="purchase.user_pickup_verified && purchase.admin_pickup_verified" 
+                     class="text-green-600 text-sm font-medium">
+                  Done
+                </div>
+                <div v-else-if="purchase.ready_for_pickup" class="space-y-2">
                   <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium block">
                     Ready for Pickup
                   </span>
@@ -74,18 +78,7 @@
                       {{ purchase.time_remaining }}
                     </p>
                   </template>
-                  <div v-if="purchase.admin_pickup_verified && !purchase.user_pickup_verified" 
-                       class="text-yellow-600 text-xs">
-                    Waiting for your verification
-                  </div>
-                  <div v-if="purchase.user_pickup_verified" class="text-green-600 text-xs">
-                    You verified pickup ✓
-                  </div>
                 </div>
-                <span v-else-if="purchase.status === 'cancelled'" 
-                      class="text-red-500 text-sm">
-                  Cancelled
-                </span>
                 <span v-else class="text-gray-500 text-sm">
                   Not Ready Yet
                 </span>
@@ -142,6 +135,25 @@ const selectedFile = ref(null);
 const form = useForm({
   payment_proof: null
 });
+
+function formatStatus(status) {
+  switch (status) {
+    case 'pending':
+      return 'Pending';
+    case 'confirmed':
+      return 'Confirmed';
+    case 'ready_for_pickup':
+      return 'Ready for Pickup';
+    case 'verified':
+      return 'User Verified';
+    case 'completed':
+      return 'Completed';
+    case 'cancelled':
+      return 'Cancelled';
+    default:
+      return status;
+  }
+}
 
 function confirmCancel(purchase) {
   Swal.fire({

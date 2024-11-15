@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use App\Notifications\OrderReadyForPickup;
+use App\Notifications\PurchaseNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -64,39 +65,24 @@ class AdminPurchaseController extends Controller
         try {
             $purchase = Purchase::findOrFail($id);
             
-            // Check if already confirmed
-            if ($purchase->status === 'confirmed') {
-                Log::warning('Attempted to confirm already confirmed purchase', [
-                    'purchase_id' => $id,
-                    'admin_id' => auth('admin')->id()
-                ]);
-                return back()->with('error', 'Purchase is already confirmed');
-            }
-
-            // Perform the update within a transaction
             \DB::transaction(function () use ($purchase) {
                 $purchase->update([
                     'status' => 'confirmed',
                     'confirmed_at' => now(),
                     'confirmed_by' => auth('admin')->id()
                 ]);
+                
+                // Send confirmation email using user's email
+                $purchase->sendNotification('confirmed');
             });
 
-            Log::info('Purchase confirmed successfully', [
-                'purchase_id' => $purchase->id,
-                'confirmed_by' => auth('admin')->id(),
-                'confirmed_at' => now()->toDateTimeString()
-            ]);
-
             return back()->with('success', 'Purchase confirmed successfully');
-
-        } catch (ModelNotFoundException $e) {
-            Log::error('Purchase not found for confirmation', [
+        } catch (\Exception $e) {
+            Log::error('Failed to confirm purchase', [
                 'purchase_id' => $id,
-                'admin_id' => auth('admin')->id()
+                'error' => $e->getMessage()
             ]);
-            
-            return back()->with('error', 'Purchase not found');
+            return back()->with('error', 'Failed to confirm purchase');
         }
     }
 
@@ -107,11 +93,17 @@ class AdminPurchaseController extends Controller
         \DB::transaction(function () use ($purchase) {
             $purchase->update([
                 'ready_for_pickup' => true,
-                'pickup_ready_at' => now()
+                'pickup_ready_at' => now(),
+                'pickup_deadline' => now()->addHours(24)
             ]);
-
-            // Send email notification
-            $purchase->user->notify(new OrderReadyForPickup($purchase));
+            
+            // Send ready for pickup email
+            try {
+                $purchase->sendNotification('ready');
+            } catch (\Exception $e) {
+                Log::error('Failed to send notification: ' . $e->getMessage());
+                // Continue execution even if notification fails
+            }
         });
 
         return back()->with('success', 'Order marked as ready for pickup and customer has been notified.');
@@ -162,22 +154,15 @@ class AdminPurchaseController extends Controller
     {
         $purchase = Purchase::findOrFail($id);
         
-        if (!$purchase->ready_for_pickup) {
-            return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
-        }
-
-        if (!$purchase->user_pickup_verified) {
-            return redirect()->back()->with('error', 'User must verify pickup first');
-        }
-        
         \DB::transaction(function () use ($purchase) {
             $purchase->update([
                 'admin_pickup_verified' => true,
                 'admin_verified_at' => now(),
-                'status' => 'completed',
-                'completed_at' => now(),
-                'ready_for_pickup' => false
+                'status' => 'completed'
             ]);
+            
+            // Send completion email
+            $purchase->sendNotification('completed');
         });
 
         Log::info('Admin verified pickup completion', [
@@ -212,7 +197,7 @@ class AdminPurchaseController extends Controller
             'id' => $purchase->id,
             'name' => $purchase->name,
             'quantity' => $purchase->quantity,
-            'status' => $purchase->status,
+            'status' => $purchase->determineStatus(),
             'ready_for_pickup' => $purchase->ready_for_pickup,
             'pickup_ready_at' => $purchase->pickup_ready_at,
             'confirmed_at' => $purchase->confirmed_at,
@@ -222,6 +207,7 @@ class AdminPurchaseController extends Controller
             'lprice' => $purchase->lprice,
             'mprice' => $purchase->mprice,
             'hprice' => $purchase->hprice,
+            'pickup_status' => $purchase->getPickupStatusAttribute(),
         ];
     }
 

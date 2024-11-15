@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use App\Notifications\PurchaseNotification;
+use Illuminate\Support\Facades\Log;
 
 class Purchase extends Model
 {
@@ -170,6 +172,74 @@ class Purchase extends Model
         if (!$this->payment_proof) {
             return null;
         }
-        return '/storage/' . $this->payment_proof;
+        return url('storage/' . $this->payment_proof);
+    }
+
+    public function determineStatus()
+    {
+        if ($this->status === 'cancelled') {
+            return 'cancelled';
+        }
+        if ($this->status === 'completed' || ($this->user_pickup_verified && $this->admin_pickup_verified)) {
+            return 'completed';
+        }
+        if ($this->user_pickup_verified && !$this->admin_pickup_verified) {
+            return 'verified';
+        }
+        if ($this->ready_for_pickup) {
+            return 'ready_for_pickup';
+        }
+        if ($this->status === 'confirmed') {
+            return 'confirmed';
+        }
+        return 'pending';
+    }
+
+    // Add this method to determine pickup status
+    public function getPickupStatusAttribute()
+    {
+        if ($this->user_pickup_verified && $this->admin_pickup_verified) {
+            return 'Done';
+        }
+        if ($this->ready_for_pickup) {
+            return 'Ready for Pickup';
+        }
+        return 'Not Ready Yet';
+    }
+
+    // Add this method for sending notifications
+    public function sendNotification($type)
+    {
+        try {
+            // Get the user's email from the relationship
+            $user = $this->user;
+            
+            if (!$user || !$user->email) {
+                Log::error('Failed to send notification: No valid user email', [
+                    'purchase_id' => $this->id,
+                    'user_id' => $this->user_id
+                ]);
+                return false;
+            }
+
+            // Send notification to the user
+            $user->notify(new PurchaseNotification($this, $type));
+
+            Log::info('Notification sent successfully', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'type' => $type
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Failed to send notification: ' . $e->getMessage(), [
+                'user_id' => $this->user_id,
+                'email' => $this->user->email ?? 'unknown',
+                'purchase_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
 }

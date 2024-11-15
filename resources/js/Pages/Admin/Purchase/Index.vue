@@ -137,7 +137,7 @@
                     <!-- View Payment Proof Button -->
                     <a 
                       v-if="purchase.payment_proof"
-                      :href="`/storage/${purchase.payment_proof}`"
+                      :href="purchase.payment_proof_url"
                       target="_blank"
                       class="text-blue-500 hover:text-blue-700 underline text-sm"
                     >

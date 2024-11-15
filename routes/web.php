@@ -17,6 +17,7 @@ use App\Http\Controllers\PurchaseController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Mail;
 
 /*
 |--------------------------------------------------------------------------
@@ -177,3 +178,26 @@ Route::middleware(['auth:admin'])->group(function () {
 // Admin routes
 Route::post('/admin/purchase/{id}/verify-payment', [AdminPurchaseController::class, 'verifyPayment'])
     ->name('admin.purchase.verify-payment');
+
+// Add this temporary route to test email
+Route::get('/test-mail/{user_id}', function ($user_id) {
+    try {
+        $user = \App\Models\User::find($user_id);
+        if (!$user) {
+            return 'User not found';
+        }
+
+        // Create a test purchase
+        $purchase = \App\Models\Purchase::where('user_id', $user_id)->first();
+        if (!$purchase) {
+            return 'No purchase found for this user';
+        }
+
+        // Send notification
+        $purchase->sendNotification('confirmed');
+        
+        return 'Email sent successfully to ' . $user->email;
+    } catch (\Exception $e) {
+        return 'Error: ' . $e->getMessage();
+    }
+});

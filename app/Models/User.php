@@ -47,7 +47,22 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'notification_settings' => 'array'
     ];
+
+    protected $attributes = [
+        'notification_settings' => '{"purchase_updates": true, "pickup_reminders": true}'
+    ];
+
+    public function wantsNotification($type)
+    {
+        $settings = $this->notification_settings ?? [
+            'purchase_updates' => true,
+            'pickup_reminders' => true
+        ];
+        
+        return $settings[$type] ?? true;
+    }
 
     // Add the chats relationship
     public function chats()

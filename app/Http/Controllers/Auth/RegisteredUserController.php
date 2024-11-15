@@ -41,6 +41,10 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'notification_settings' => json_encode([
+                'purchase_updates' => true,
+                'pickup_reminders' => true
+            ])
         ]);
 
         event(new Registered($user));
