@@ -13,6 +13,7 @@ defineProps({
 </script>
 
 <template>
+
     <Head title="Dashboard" />
 
     <AuthenticatedLayout>
@@ -64,11 +65,21 @@ defineProps({
                                 <table class="min-w-full divide-y divide-gray-200">
                                     <thead>
                                         <tr>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Medicine</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                Medicine
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                Quantity
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                Total
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                Status
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                                Date
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-200">
@@ -85,14 +96,15 @@ defineProps({
                                                     {{ purchase.status || 'pending' }}
                                                 </span>
                                             </td>
-                                            <td class="px-6 py-4">{{ new Date(purchase.created_at).toLocaleDateString() }}</td>
+                                            <td class="px-6 py-4">{{ new Date(purchase.created_at).toLocaleDateString()
+                                                }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <Link :href="route('purchase.index')" 
-                                  class="mt-4 inline-block text-blue-500 hover:text-blue-700">
-                                View All Purchases →
+                            <Link :href="route('purchase.index')"
+                                class="mt-4 inline-block text-blue-500 hover:text-blue-700">
+                            View All Purchases →
                             </Link>
                         </div>
                     </div>
@@ -105,34 +117,39 @@ defineProps({
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6">
                                 <h3 class="text-lg font-semibold mb-4">Available Medicines</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <div v-for="medicine in availableMedicines" :key="medicine.id" 
-                                         class="border rounded-lg p-4">
-                                        <h4 class="font-medium">{{ medicine.name }}</h4>
-                                        <p class="text-sm text-gray-500">{{ medicine.dosage }}</p>
-                                        <p class="mt-2 text-green-600">₱{{ medicine.mprice }}</p>
-                                        <p class="text-sm text-gray-500">Stock: {{ medicine.quantity }}</p>
+                                <!-- Scrollable container -->
+                                <div class="flex overflow-x-auto py-2 space-x-6" style="max-width: 100%;">
+                                    <div v-for="medicine in availableMedicines" :key="medicine.id"
+                                        class="border rounded-lg p-6 md:p-8 flex-shrink-0 flex flex-col items-start min-w-[250px]">
+                                        <h4 class="font-medium text-xl">{{ medicine.name }}</h4>
+                                        <p class="text-sm text-gray-500 mt-1">{{ medicine.dosage }}</p>
+                                        <p class="mt-4 text-green-600 text-lg">₱{{ medicine.mprice }}</p>
+                                        <p class="text-sm text-gray-500 mt-2">Stock: {{ medicine.quantity }}</p>
+                                        <p class="text-sm text-gray-500 mt-2">Expiration: {{ medicine.expdate }}</p>
                                     </div>
                                 </div>
-                                <Link :href="route('medicines.index')" 
-                                      class="mt-4 inline-block text-blue-500 hover:text-blue-700">
-                                    View All Medicines →
+                                <Link :href="route('medicines.index')"
+                                    class="mt-4 inline-block text-blue-500 hover:text-blue-700">
+                                View All Medicines →
                                 </Link>
                             </div>
                         </div>
+
                     </div>
 
                     <!-- Special Promos -->
                     <div class="col-span-12 md:col-span-4">
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold mb-4">Special Offers</h3>
-                                <div class="space-y-4">
-                                    <div v-for="medicine in promoMedicines" :key="medicine.id" 
-                                         class="border rounded-lg p-4 bg-gradient-to-r from-yellow-50 to-yellow-100">
+                            <div class="p-10">
+                                <h3 class="text-lg font-semibold mb-3">Special Offers</h3>
+                                <!-- Scrollable container -->
+                                <div class="space-y-4 h-64 overflow-y-auto">
+                                    <div v-for="medicine in promoMedicines" :key="medicine.id"
+                                        class="border rounded-lg p-4 bg-gradient-to-r from-yellow-50 to-yellow-100">
                                         <h4 class="font-medium">{{ medicine.name }}</h4>
                                         <div class="flex items-center mt-2">
-                                            <span class="text-gray-500 line-through text-sm">₱{{ medicine.hprice }}</span>
+                                            <span class="text-gray-500 line-through text-sm">₱{{ medicine.hprice
+                                                }}</span>
                                             <span class="text-green-600 font-bold ml-2">₱{{ medicine.mprice }}</span>
                                         </div>
                                         <p class="text-sm text-gray-500 mt-1">Stock: {{ medicine.quantity }}</p>
@@ -141,6 +158,7 @@ defineProps({
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>

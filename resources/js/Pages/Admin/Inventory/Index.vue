@@ -81,13 +81,13 @@ function confirmDelete(medicineId) {
                                         {{ medicine.price }}
                                     </td>-->
                                     <td class="px-6 py-4">
-                                        {{ medicine.lprice }}
+                                        ₱{{ medicine.lprice }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        {{ medicine.mprice }}
+                                        ₱{{ medicine.mprice }}
                                     </td>
                                     <td class="px-6 py-4">
-                                        {{ medicine.hprice }}
+                                        ₱{{ medicine.hprice }}
                                     </td>
                                     <td class="px-6 py-4">
                                         {{ medicine.quantity}}

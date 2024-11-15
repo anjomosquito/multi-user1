@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -39,28 +39,39 @@ onMounted(() => {
                             <!-- Logo -->
                             <div class="shrink-0 flex items-center">
                                 <Link :href="route('dashboard')">
-                                    <ApplicationLogo
-                                        class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200"
-                                    />
+                                <ApplicationLogo
+                                    class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
                                 </Link>
                             </div>
 
                             <!-- Navigation Links -->
                             <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                                 <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                                    <svg width="40px" height="40px" viewBox="0 0 24 24" id="dashboard" xmlns="http://www.w3.org/2000/svg" class="icon multi-color"><path id="secondary-fill" d="M9,12H4a1,1,0,0,1-1-1V6h7v5A1,1,0,0,1,9,12Zm12,8V15H14v5a1,1,0,0,0,1,1h5A1,1,0,0,0,21,20Z" style="fill: rgb(44, 169, 188); stroke-width: 2;"></path><path id="tertiary-fill" d="M9,21H4a1,1,0,0,1-1-1V19h7v1A1,1,0,0,1,9,21ZM21,7V6H14V7a1,1,0,0,0,1,1h5A1,1,0,0,0,21,7Z" style="fill: #b7b7b7; stroke-width: 2;"></path><path id="primary-stroke" d="M9,12H4a1,1,0,0,1-1-1V4A1,1,0,0,1,4,3H9a1,1,0,0,1,1,1v7A1,1,0,0,1,9,12ZM21,7V4a1,1,0,0,0-1-1H15a1,1,0,0,0-1,1V7a1,1,0,0,0,1,1h5A1,1,0,0,0,21,7ZM10,20V17a1,1,0,0,0-1-1H4a1,1,0,0,0-1,1v3a1,1,0,0,0,1,1H9A1,1,0,0,0,10,20Zm11,0V13a1,1,0,0,0-1-1H15a1,1,0,0,0-1,1v7a1,1,0,0,0,1,1h5A1,1,0,0,0,21,20Z" style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;"></path></svg>
+                                    <svg width="40px" height="40px" viewBox="0 0 24 24" id="dashboard"
+                                        xmlns="http://www.w3.org/2000/svg" class="icon multi-color">
+                                        <path id="secondary-fill"
+                                            d="M9,12H4a1,1,0,0,1-1-1V6h7v5A1,1,0,0,1,9,12Zm12,8V15H14v5a1,1,0,0,0,1,1h5A1,1,0,0,0,21,20Z"
+                                            style="fill: rgb(44, 169, 188); stroke-width: 2;"></path>
+                                        <path id="tertiary-fill"
+                                            d="M9,21H4a1,1,0,0,1-1-1V19h7v1A1,1,0,0,1,9,21ZM21,7V6H14V7a1,1,0,0,0,1,1h5A1,1,0,0,0,21,7Z"
+                                            style="fill: #b7b7b7; stroke-width: 2;"></path>
+                                        <path id="primary-stroke"
+                                            d="M9,12H4a1,1,0,0,1-1-1V4A1,1,0,0,1,4,3H9a1,1,0,0,1,1,1v7A1,1,0,0,1,9,12ZM21,7V4a1,1,0,0,0-1-1H15a1,1,0,0,0-1,1V7a1,1,0,0,0,1,1h5A1,1,0,0,0,21,7ZM10,20V17a1,1,0,0,0-1-1H4a1,1,0,0,0-1,1v3a1,1,0,0,0,1,1H9A1,1,0,0,0,10,20Zm11,0V13a1,1,0,0,0-1-1H15a1,1,0,0,0-1,1v7a1,1,0,0,0,1,1h5A1,1,0,0,0,21,20Z"
+                                            style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;">
+                                        </path>
+                                    </svg>
                                     Dashboard
                                 </NavLink>
 
                                 <NavLink :href="route('medicines.index')" :active="route().current('medicines.index')">
                                     <i class="fas fa-capsules text-green-500"
-                                    style="font-size: 25px; width: 30px; height: 30px"></i>                                    Medicines
+                                        style="font-size: 25px; width: 30px; height: 30px"></i> Medicines
                                 </NavLink>
-                                
+
 
                                 <NavLink :href="route('cart.index')" :active="route().current('cart.index')">
                                     <i class="fas fa-shopping-cart text-yellow-500"
-                                    style="font-size: 25px; width: 30px; height: 30px"></i>
+                                        style="font-size: 25px; width: 30px; height: 30px"></i>
                                     Cart
                                 </NavLink>
 
@@ -69,13 +80,13 @@ onMounted(() => {
                                         style="font-size: 25px; width: 30px; height: 30px"></i>
                                     Purchase
                                 </NavLink>
-                                
+
                                 <NavLink :href="route('chat.index')" :active="route().current('chat.index')">
                                     <i class="fas fa-comments text-orange-500"
                                         style="font-size: 25px; width: 30px; height: 30px"></i>
                                     Chat Support
-                                    <span v-if="unreadCount > 0" 
-                                          class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                    <span v-if="unreadCount > 0"
+                                        class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
                                         {{ unreadCount }}
                                     </span>
                                 </NavLink>
@@ -88,23 +99,15 @@ onMounted(() => {
                                 <Dropdown align="right" width="48">
                                     <template #trigger>
                                         <span class="inline-flex rounded-md">
-                                            <button
-                                                type="button"
-                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150"
-                                            >
+                                            <button type="button"
+                                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150">
                                                 {{ $page.props.auth.user.name }}
 
-                                                <svg
-                                                    class="ml-2 -mr-0.5 h-4 w-4"
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    viewBox="0 0 20 20"
-                                                    fill="currentColor"
-                                                >
-                                                    <path
-                                                        fill-rule="evenodd"
+                                                <svg class="ml-2 -mr-0.5 h-4 w-4" xmlns="http://www.w3.org/2000/svg"
+                                                    viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd"
                                                         d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                                        clip-rule="evenodd"
-                                                    />
+                                                        clip-rule="evenodd" />
                                                 </svg>
                                             </button>
                                         </span>
@@ -124,31 +127,19 @@ onMounted(() => {
 
                         <!-- Hamburger -->
                         <div class="-mr-2 flex items-center sm:hidden">
-                            <button
-                                @click="showingNavigationDropdown = !showingNavigationDropdown"
-                                class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-900 focus:text-gray-500 dark:focus:text-gray-400 transition duration-150 ease-in-out"
-                            >
+                            <button @click="showingNavigationDropdown = !showingNavigationDropdown"
+                                class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-900 focus:text-gray-500 dark:focus:text-gray-400 transition duration-150 ease-in-out">
                                 <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                    <path
-                                        :class="{
-                                            hidden: showingNavigationDropdown,
-                                            'inline-flex': !showingNavigationDropdown,
-                                        }"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M4 6h16M4 12h16M4 18h16"
-                                    />
-                                    <path
-                                        :class="{
-                                            hidden: !showingNavigationDropdown,
-                                            'inline-flex': showingNavigationDropdown,
-                                        }"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
+                                    <path :class="{
+                                        hidden: showingNavigationDropdown,
+                                        'inline-flex': !showingNavigationDropdown,
+                                    }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 6h16M4 12h16M4 18h16" />
+                                    <path :class="{
+                                        hidden: !showingNavigationDropdown,
+                                        'inline-flex': showingNavigationDropdown,
+                                    }" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
@@ -156,10 +147,8 @@ onMounted(() => {
                 </div>
 
                 <!-- Responsive Navigation Menu -->
-                <div
-                    :class="{ block: showingNavigationDropdown, hidden: !showingNavigationDropdown }"
-                    class="sm:hidden"
-                >
+                <div :class="{ block: showingNavigationDropdown, hidden: !showingNavigationDropdown }"
+                    class="sm:hidden">
                     <div class="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Dashboard
@@ -167,7 +156,8 @@ onMounted(() => {
                     </div>
 
                     <div class="pt-2 pb-3 space-y-1">
-                        <ResponsiveNavLink :href="route('medicines.index')" :active="route().current('medicines.index')">
+                        <ResponsiveNavLink :href="route('medicines.index')"
+                            :active="route().current('medicines.index')">
                             Medicines
                         </ResponsiveNavLink>
                     </div>

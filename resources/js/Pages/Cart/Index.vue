@@ -1,9 +1,14 @@
 <template>
   <AuthenticatedLayout>
+
     <Head title="Cart" />
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-12">
-      <h2 class="text-2xl font-semibold mb-6 text-center">Your Cart</h2>
+      <h2 class="text-2xl font-semibold mb-6 text-center">Your Cart <span v-if="cartCount > 0"
+          class="ml-2 bg-red-500 text-white text-sm px-2 py-1 rounded-full">
+          {{ cartCount }}
+        </span></h2>
+
 
       <div v-if="cartItems.length === 0" class="flex items-center justify-center h-64">
         <div class="flex flex-col items-center">
@@ -11,8 +16,10 @@
             Your cart is empty.
           </div>
           <div class="animate-float">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18M3 3l3 18h12l3-18M3 3l3 18h12l3-18" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-500" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 3h18M3 3l3 18h12l3-18M3 3l3 18h12l3-18" />
             </svg>
           </div>
         </div>
@@ -44,7 +51,8 @@
               <td class="px-6 py-4">{{ item.dosage }}</td>
               <td class="px-6 py-4">{{ item.expdate }}</td>
               <td class="px-6 py-4">
-                <button @click="confirmRemove(item)" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded mr-1">
+                <button @click="confirmRemove(item)"
+                  class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded mr-1">
                   Remove
                 </button>
                 <button @click="confirmOrder" class="px-4 py-2 bg-[#28a745] hover:bg-green-600 text-white rounded">
@@ -66,6 +74,7 @@ import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
   cartItems: Array,
+  cartCount: Number,
 });
 
 const incrementQuantity = (item) => {

@@ -75,9 +75,11 @@ class CartController extends Controller
     {
         $user = Auth::user();
         $cartItems = Cart::with('medicine')->where('user_id', $user->id)->get();
+        $cartCount = $cartItems->count(); // Count the number of items in the cart
 
         return inertia('Cart/Index', [
             'cartItems' => $cartItems,
+            'cartCount' => $cartCount, // Pass the cart count to the view
         ]);
     }
 }
