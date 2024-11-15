@@ -114,8 +114,8 @@ return [
         'admins' => [
             'provider' => 'admins',
             'table' => 'password_reset_tokens',
-            'expire' => 30,
-            'throttle' => 30,
+            'expire' => 60,
+            'throttle' => 60,
         ],
     ],
 

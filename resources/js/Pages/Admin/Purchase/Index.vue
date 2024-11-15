@@ -114,6 +114,53 @@
                      class="text-sm text-green-600 font-medium">
                   Order Completed ✓
                 </div>
+
+                <!-- Payment Proof Section -->
+                <div v-if="purchase.payment_proof" class="mt-2 space-y-2">
+                  <div class="flex items-center space-x-2">
+                    <span :class="{
+                      'text-yellow-600': purchase.payment_status === 'pending',
+                      'text-green-600': purchase.payment_status === 'verified',
+                      'text-red-600': purchase.payment_status === 'rejected'
+                    }">
+                      <template v-if="purchase.payment_status === 'pending'">
+                        ⏳ Payment verification needed
+                      </template>
+                      <template v-if="purchase.payment_status === 'verified'">
+                        ✓ Payment verified
+                      </template>
+                      <template v-if="purchase.payment_status === 'rejected'">
+                        ✗ Payment rejected
+                      </template>
+                    </span>
+                    
+                    <!-- View Payment Proof Button -->
+                    <a 
+                      v-if="purchase.payment_proof"
+                      :href="`/storage/${purchase.payment_proof}`"
+                      target="_blank"
+                      class="text-blue-500 hover:text-blue-700 underline text-sm"
+                    >
+                      View Proof
+                    </a>
+                  </div>
+
+                  <!-- Verification Buttons -->
+                  <div v-if="purchase.payment_status === 'pending'" class="flex space-x-2">
+                    <button 
+                      @click="verifyPayment(purchase.id, 'verified')"
+                      class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+                    >
+                      Verify Payment
+                    </button>
+                    <button 
+                      @click="verifyPayment(purchase.id, 'rejected')"
+                      class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                    >
+                      Reject Payment
+                    </button>
+                  </div>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -251,6 +298,44 @@ function formatStatus(status) {
     default:
       return status;
   }
+}
+
+function verifyPayment(purchaseId, status) {
+  const action = status === 'verified' ? 'verify' : 'reject';
+  
+  Swal.fire({
+    title: `${action.charAt(0).toUpperCase() + action.slice(1)} Payment?`,
+    text: `Are you sure you want to ${action} this payment?`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: `Yes, ${action}`,
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: status === 'verified' ? '#10B981' : '#EF4444',
+  }).then((result) => {
+    if (result.isConfirmed) {
+      router.post(route('admin.purchase.verify-payment', purchaseId), {
+        status: status
+      }, {
+        preserveScroll: true,
+        onSuccess: () => {
+          Swal.fire({
+            title: 'Success!',
+            text: `Payment ${status} successfully.`,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+          });
+        },
+        onError: () => {
+          Swal.fire({
+            title: 'Error!',
+            text: 'Failed to process payment verification.',
+            icon: 'error'
+          });
+        }
+      });
+    }
+  });
 }
 </script>
 

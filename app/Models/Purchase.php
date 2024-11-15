@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Purchase extends Model
 {
@@ -27,12 +28,21 @@ class Purchase extends Model
         'user_pickup_verified',
         'admin_verified_at',
         'user_verified_at',
-        'pickup_deadline'
+        'pickup_deadline',
+        'payment_proof',
+        'payment_status',
+        'payment_verified_at',
+        'payment_verified_by'
     ];
 
     // Define status constants
     public const STATUS_PENDING = 'pending';
     public const STATUS_CONFIRMED = 'confirmed';
+
+    // Add status constants
+    const PAYMENT_STATUS_PENDING = 'pending';
+    const PAYMENT_STATUS_VERIFIED = 'verified';
+    const PAYMENT_STATUS_REJECTED = 'rejected';
 
     // Cast attributes to their proper types
     protected $casts = [
@@ -94,6 +104,22 @@ class Purchase extends Model
         return $this->user_pickup_verified && $this->admin_pickup_verified;
     }
 
+    // Add payment status check methods
+    public function isPaymentPending(): bool
+    {
+        return $this->payment_status === self::PAYMENT_STATUS_PENDING;
+    }
+
+    public function isPaymentVerified(): bool
+    {
+        return $this->payment_status === self::PAYMENT_STATUS_VERIFIED;
+    }
+
+    public function isPaymentRejected(): bool
+    {
+        return $this->payment_status === self::PAYMENT_STATUS_REJECTED;
+    }
+
     // Status update methods
     public function markAsConfirmed(): void
     {
@@ -131,5 +157,19 @@ class Purchase extends Model
     public function scopeNotReadyForPickup($query)
     {
         return $query->where('ready_for_pickup', false);
+    }
+
+    // Add these to the $appends array to make them available in JSON
+    protected $appends = [
+        'payment_proof_url'
+    ];
+
+    // Add this accessor method
+    public function getPaymentProofUrlAttribute()
+    {
+        if (!$this->payment_proof) {
+            return null;
+        }
+        return '/storage/' . $this->payment_proof;
     }
 }

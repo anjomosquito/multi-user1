@@ -111,6 +111,12 @@
                       class="block text-center text-green-600 text-sm">
                   Completed ✓
                 </span>
+
+                <!-- Payment proof upload -->
+                <PaymentProofUpload 
+                  v-if="purchase.status === 'confirmed' || purchase.status === 'ready_for_pickup'"
+                  :purchase="purchase"
+                />
               </td>
             </tr>
           </tbody>
@@ -124,9 +130,17 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
+import { ref } from 'vue';
+import { useForm } from '@inertiajs/vue3';
+import PaymentProofUpload from '@/Components/PaymentProofUpload.vue';
 
 const props = defineProps({
   purchases: Array,
+});
+
+const selectedFile = ref(null);
+const form = useForm({
+  payment_proof: null
 });
 
 function confirmCancel(purchase) {
@@ -186,6 +200,24 @@ function confirmPickupVerification(purchase) {
           });
         }
       });
+    }
+  });
+}
+
+function handleFileChange(e) {
+  selectedFile.value = e.target.files[0];
+}
+
+function uploadPaymentProof(purchaseId) {
+  if (!selectedFile.value) return;
+
+  const formData = new FormData();
+  formData.append('payment_proof', selectedFile.value);
+
+  form.post(route('purchase.upload-payment', purchaseId), {
+    preserveScroll: true,
+    onSuccess: () => {
+      selectedFile.value = null;
     }
   });
 }

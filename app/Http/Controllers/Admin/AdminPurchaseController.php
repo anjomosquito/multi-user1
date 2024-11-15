@@ -7,6 +7,9 @@ use App\Models\Purchase;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use App\Notifications\OrderReadyForPickup;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class AdminPurchaseController extends Controller
 {
@@ -43,7 +46,11 @@ class AdminPurchaseController extends Controller
                     'created_at' => $purchase->created_at,
                     'admin_pickup_verified' => $purchase->admin_pickup_verified,
                     'user_pickup_verified' => $purchase->user_pickup_verified,
-                    'verification_status' => $this->getVerificationStatus($purchase)
+                    'verification_status' => $this->getVerificationStatus($purchase),
+                    'payment_proof' => $purchase->payment_proof,
+                    'payment_proof_url' => $purchase->payment_proof_url,
+                    'payment_status' => $purchase->payment_status,
+                    'payment_verified_at' => $purchase->payment_verified_at,
                 ];
             });
 
@@ -97,20 +104,17 @@ class AdminPurchaseController extends Controller
     {
         $purchase = Purchase::findOrFail($id);
         
-        if ($purchase->status !== 'confirmed') {
-            return redirect()->back()->with('error', 'Purchase must be confirmed first');
-        }
-        
-        $now = now();
-        $pickup_deadline = $now->copy()->addHours(12);
-        
-        $purchase->update([
-            'ready_for_pickup' => true,
-            'pickup_ready_at' => $now,
-            'pickup_deadline' => $pickup_deadline
-        ]);
+        \DB::transaction(function () use ($purchase) {
+            $purchase->update([
+                'ready_for_pickup' => true,
+                'pickup_ready_at' => now()
+            ]);
 
-        return redirect()->back()->with('success', 'Purchase marked as ready for pickup. Customer has 12 hours to pick up.');
+            // Send email notification
+            $purchase->user->notify(new OrderReadyForPickup($purchase));
+        });
+
+        return back()->with('success', 'Order marked as ready for pickup and customer has been notified.');
     }
 
     public function markAsCompleted($id)
@@ -183,6 +187,23 @@ class AdminPurchaseController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Pickup verified and order completed.');
+    }
+
+    public function verifyPayment(Request $request, $id)
+    {
+        $purchase = Purchase::findOrFail($id);
+        
+        $request->validate([
+            'status' => 'required|in:verified,rejected'
+        ]);
+
+        $purchase->update([
+            'payment_status' => $request->status,
+            'payment_verified_at' => now(),
+            'payment_verified_by' => Auth::guard('admin')->id()
+        ]);
+
+        return back()->with('success', 'Payment ' . $request->status . ' successfully.');
     }
 
     protected function formatPurchase($purchase)

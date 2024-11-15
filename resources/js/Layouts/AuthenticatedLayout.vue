@@ -1,13 +1,31 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link } from '@inertiajs/vue3';
+import axios from 'axios';
 
 const showingNavigationDropdown = ref(false);
+const unreadCount = ref(0);
+
+// Function to fetch unread count
+const fetchUnreadCount = async () => {
+    try {
+        const response = await axios.get(route('chat.unread-count'));
+        unreadCount.value = response.data.count;
+    } catch (error) {
+        console.error('Failed to fetch unread count:', error);
+    }
+};
+
+// Update unread count periodically
+onMounted(() => {
+    fetchUnreadCount();
+    setInterval(fetchUnreadCount, 30000); // Update every 30 seconds
+});
 </script>
 
 <template>
@@ -49,7 +67,13 @@ const showingNavigationDropdown = ref(false);
                                     Purchase
                                 </NavLink>
                                 
-                                
+                                <NavLink :href="route('chat.index')" :active="route().current('chat.index')">
+                                    Chat Support
+                                    <span v-if="unreadCount > 0" 
+                                          class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                        {{ unreadCount }}
+                                    </span>
+                                </NavLink>
                             </div>
                         </div>
 

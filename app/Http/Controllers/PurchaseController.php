@@ -9,6 +9,7 @@ use App\Models\Cart;
 use App\Models\Medicine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class PurchaseController extends Controller
 {
@@ -75,7 +76,10 @@ class PurchaseController extends Controller
                     'created_at' => $purchase->created_at,
                     'admin_pickup_verified' => $purchase->admin_pickup_verified,
                     'user_pickup_verified' => $purchase->user_pickup_verified,
-                    'time_remaining' => $this->calculateTimeRemaining($purchase)
+                    'time_remaining' => $this->calculateTimeRemaining($purchase),
+                    'payment_proof' => $purchase->payment_proof,
+                    'payment_proof_url' => $purchase->payment_proof_url,
+                    'payment_status' => $purchase->payment_status,
                 ];
             });
 
@@ -159,5 +163,29 @@ class PurchaseController extends Controller
         $remainingMinutes = $minutes % 60;
 
         return sprintf('%02d:%02d hours remaining', $hours, $remainingMinutes);
+    }
+
+    public function uploadPaymentProof(Request $request, $id)
+    {
+        $request->validate([
+            'payment_proof' => 'required|image|max:2048|mimes:jpeg,png,jpg'
+        ]);
+
+        $purchase = Purchase::where('user_id', Auth::id())->findOrFail($id);
+
+        if ($purchase->payment_proof) {
+            // Delete old payment proof if exists
+            Storage::disk('public')->delete($purchase->payment_proof);
+        }
+
+        // Store the new payment proof in public disk
+        $path = $request->file('payment_proof')->store('payment_proofs', 'public');
+
+        $purchase->update([
+            'payment_proof' => $path,
+            'payment_status' => Purchase::PAYMENT_STATUS_PENDING
+        ]);
+
+        return back()->with('success', 'Payment proof uploaded successfully.');
     }
 }

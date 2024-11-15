@@ -20,6 +20,7 @@
         "date-fns": "^4.1.0",
         "dayjs": "^1.11.13",
         "dayjs-plugin-utc": "^0.1.2",
+        "lodash": "^4.17.21",
         "sweetalert2": "^11.14.5"
     }
 }

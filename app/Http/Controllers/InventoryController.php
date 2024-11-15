@@ -13,15 +13,30 @@ use Illuminate\Support\Facades\Redirect;
 
 class InventoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Retrieve all medicines using the Medicine model
-        $medicines = Medicine::all();
-
-        // Pass the retrieved data to the view using Inertia
-        return Inertia::render('Medicines/Index', [
-            'medicines' => $medicines
-        ]);
+        try {
+            $query = Medicine::query();
+            
+            if ($request->has('search')) {
+                $query->search($request->search);
+            }
+            
+            $medicines = $query->where('quantity', '>', 0)
+                              ->latest()
+                              ->paginate(10);
+            
+            return Inertia::render('Medicines/Index', [
+                'medicines' => $medicines->items() ?? [],
+                'filters' => $request->only(['search'])
+            ]);
+        } catch (\Exception $e) {
+            return Inertia::render('Medicines/Index', [
+                'medicines' => [],
+                'filters' => $request->only(['search']),
+                'error' => 'Failed to load medicines'
+            ]);
+        }
     }
 
     public function store(Request $request)

@@ -122,7 +122,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 require __DIR__.'/auth.php';
 
 // Admin routes group
-Route::middleware(['auth:admin', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Purchase management routes
     Route::prefix('purchase')->name('purchase.')->group(function () {
         // View purchases
@@ -156,4 +156,24 @@ Route::middleware(['auth', 'admin'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::post('/purchase/{id}/verify-pickup', [PurchaseController::class, 'verifyPickup'])
         ->name('purchase.verify-pickup');
+    Route::post('/purchase/{id}/upload-payment', [PurchaseController::class, 'uploadPaymentProof'])
+        ->name('purchase.upload-payment');
 });
+
+// User chat routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
+    Route::get('/chat/unread-count', [ChatController::class, 'getUnreadCount'])->name('chat.unread-count');
+});
+
+// Admin chat routes
+Route::middleware(['auth:admin'])->group(function () {
+    Route::get('/admin/chat', [App\Http\Controllers\Admin\ChatController::class, 'index'])->name('admin.chat.index');
+    Route::get('/admin/chat/{user}', [App\Http\Controllers\Admin\ChatController::class, 'show'])->name('admin.chat.show');
+    Route::post('/admin/chat/{user}', [App\Http\Controllers\Admin\ChatController::class, 'store'])->name('admin.chat.store');
+});
+
+// Admin routes
+Route::post('/admin/purchase/{id}/verify-payment', [AdminPurchaseController::class, 'verifyPayment'])
+    ->name('admin.purchase.verify-payment');

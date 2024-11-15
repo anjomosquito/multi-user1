@@ -16,15 +16,28 @@ class MedicineController extends Controller
      *
      * @return \Inertia\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Retrieve all medicines using the Medicine model
-        $medicines = Medicine::all();
-
-        // Pass the retrieved data to the view using Inertia
-        return Inertia::render('Admin/Medicines/Index', [
-            'medicines' => $medicines
-        ]);
+        try {
+            $query = Medicine::query();
+            
+            if ($request->has('search')) {
+                $query->search($request->search);
+            }
+            
+            $medicines = $query->latest()->paginate(10);
+            
+            return Inertia::render('Admin/Medicines/Index', [
+                'medicines' => $medicines->items() ?? [],
+                'filters' => $request->only(['search'])
+            ]);
+        } catch (\Exception $e) {
+            return Inertia::render('Admin/Medicines/Index', [
+                'medicines' => [],
+                'filters' => $request->only(['search']),
+                'error' => 'Failed to load medicines'
+            ]);
+        }
     }
 
     /**

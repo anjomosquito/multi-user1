@@ -46,5 +46,12 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'password' => 'hashed',
     ];
+
+    // Add the chats relationship
+    public function chats()
+    {
+        return $this->hasMany(Chat::class);
+    }
 }
