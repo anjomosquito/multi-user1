@@ -55,4 +55,15 @@ class ChatController extends Controller
 
         return response()->json(['count' => $count]);
     }
-} 
+
+    public function destroy($id)
+    {
+        $chat = Chat::where('user_id', auth()->id())->findOrFail($id);
+
+        // Delete the message
+        $chat->delete();
+
+        return response()->json(['message' => 'Message deleted successfully.']);
+    }
+
+}

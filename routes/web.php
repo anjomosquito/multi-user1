@@ -5,7 +5,6 @@ use App\Http\Controllers\Admin\AdminAuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\MedicineController;
 use App\Http\Controllers\Admin\AdminInventoryController;
-use App\Http\Controllers\Admin\AdminChatController;
 use App\Http\Controllers\Admin\AdminPurchaseController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
@@ -80,7 +79,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/admin/admininventory/index', [AdminInventoryController::class, 'index'])->name('admin.admininventory.index');
     Route::get('/dashboard', [InventoryController::class, 'dashboard'])->name('dashboard');
     //Message 
-    Route::get('/admin/chat/index', [AdminChatController::class, 'index'])->name('admin.chat.index');
 
     //UsersProfiles
     Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
@@ -165,6 +163,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
     Route::post('/chat', [ChatController::class, 'store'])->name('chat.store');
+    Route::delete('/chat/{id}', [ChatController::class, 'destroy'])->name('chat.destroy');
     Route::get('/chat/unread-count', [ChatController::class, 'getUnreadCount'])->name('chat.unread-count');
 });
 
@@ -172,6 +171,8 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth:admin'])->group(function () {
     Route::get('/admin/chat', [App\Http\Controllers\Admin\ChatController::class, 'index'])->name('admin.chat.index');
     Route::get('/admin/chat/{user}', [App\Http\Controllers\Admin\ChatController::class, 'show'])->name('admin.chat.show');
+    Route::delete('/admin/chat/{user}/delete/{chatId}', [App\Http\Controllers\Admin\ChatController::class, 'destroy'])
+    ->name('admin.chat.delete');
     Route::post('/admin/chat/{user}', [App\Http\Controllers\Admin\ChatController::class, 'store'])->name('admin.chat.store');
 });
 

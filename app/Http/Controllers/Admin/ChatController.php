@@ -13,13 +13,17 @@ class ChatController extends Controller
 {
     public function index()
     {
-        $users = User::with(['chats' => function ($query) {
+        $users = User::with([
+            'chats' => function ($query) {
                 $query->latest()->take(1);
-            }])
-            ->withCount(['chats as unread_count' => function ($query) {
-                $query->where('is_read', false)
-                    ->where('is_admin', false);
-            }])
+            }
+        ])
+            ->withCount([
+                'chats as unread_count' => function ($query) {
+                    $query->where('is_read', false)
+                        ->where('is_admin', false);
+                }
+            ])
             ->orderByDesc('unread_count')
             ->orderByDesc(function ($query) {
                 $query->select('created_at')
@@ -72,4 +76,29 @@ class ChatController extends Controller
 
         return back();
     }
-} 
+
+    public function destroy($userId, $chatId)
+    {
+        $chat = Chat::where('user_id', $userId)->findOrFail($chatId);
+
+        // Check if the authenticated user is an admin
+        if (Auth::guard('admin')->check()) {
+            $chat->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Message deleted successfully!'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'You do not have permission to delete this message.'
+        ], 403);
+    }
+
+
+
+
+
+}
