@@ -20,7 +20,7 @@ const { props } = usePage();
                 <div class="grid grid-cols-12 gap-4">
                     <!-- Total Medicines -->
                     <div class="col-span-12 md:col-span-3">
-                        <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg h-40">
                             <div class="p-6 text-gray-900 dark:text-gray-100">
                                 <h3 class="text-lg font-semibold">Total Medicines:</h3>
                                 <p class="text-2xl">{{ props.medicineCount }}</p>
@@ -30,7 +30,7 @@ const { props } = usePage();
 
                     <!-- Total Purchases -->
                     <div class="col-span-12 md:col-span-3">
-                        <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg h-40">
                             <div class="p-6 text-gray-900 dark:text-gray-100">
                                 <h3 class="text-lg font-semibold">Total Purchases:</h3>
                                 <p class="text-2xl">{{ props.purchaseCount }}</p>
@@ -40,14 +40,25 @@ const { props } = usePage();
 
                     <!-- Low Stock Alert -->
                     <div class="col-span-12 md:col-span-3">
-                        <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <Link :href="route('admin.admininventory.index')" :active="route().current('admin.admininventory.index')">
+                            <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg h-40">
                             <div class="p-6 text-gray-900 dark:text-gray-100">
                                 <h3 class="text-lg font-semibold">Low Stock Items:</h3>
                                 <p class="text-2xl text-red-500">{{ props.lowStockCount }}</p>
-                                <div class="mt-2 space-y-2">
-                                    <div v-for="medicine in props.lowStockMedicines" 
-                                         :key="medicine.id" 
-                                         class="text-sm p-2 bg-red-50 rounded-md">
+                                <!-- Scrollable Container with Visible Arrows -->
+                                <div 
+                                    class="mt-2 space-y-2 overflow-y-auto"
+                                    :class="{
+                                        'max-h-24': props.lowStockMedicines.length > 2,  // Change max height here to fit the scroll bar
+                                        'max-h-auto': props.lowStockMedicines.length <= 2
+                                    }"
+                                    style="max-height: 5rem;" 
+                                >
+                                    <div 
+                                        v-for="medicine in props.lowStockMedicines.slice(0, 10)" 
+                                        :key="medicine.id"
+                                        class="text-sm p-2 bg-red-50 rounded-md"
+                                    >
                                         <div class="flex justify-between items-center">
                                             <div>
                                                 <p class="font-medium">{{ medicine.name }}</p>
@@ -61,11 +72,12 @@ const { props } = usePage();
                                 </div>
                             </div>
                         </div>
+                        </Link>
                     </div>
 
                     <!-- Total Revenue -->
                     <div class="col-span-12 md:col-span-3">
-                        <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg h-40">
                             <div class="p-6 text-gray-900 dark:text-gray-100">
                                 <h3 class="text-lg font-semibold">Total Revenue:</h3>
                                 <p class="text-2xl text-green-500">₱{{ props.totalRevenue }}</p>
@@ -81,9 +93,9 @@ const { props } = usePage();
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6">
                                 <h3 class="text-lg font-semibold mb-4">Recent Purchases</h3>
-                                <div class="space-y-3">
-                                    <div v-for="purchase in props.recentPurchases" :key="purchase.id" 
-                                         class="flex justify-between items-center border-b pb-2">
+                                <!-- Scrollable Container -->
+                                <div class="space-y-3 overflow-y-auto max-h-64">
+                                    <div v-for="purchase in props.recentPurchases" :key="purchase.id" class="flex justify-between items-center border-b pb-2">
                                         <div>
                                             <p class="font-medium">{{ purchase.user?.name || purchase.name || 'Unknown User' }}</p>
                                             <p class="text-sm text-gray-500">{{ purchase.created_at }}</p>
@@ -100,8 +112,7 @@ const { props } = usePage();
                                         </div>
                                     </div>
                                 </div>
-                                <Link :href="route('admin.purchase.index')" 
-                                      class="mt-4 text-blue-500 hover:text-blue-700">
+                                <Link :href="route('admin.purchase.index')" class="mt-4 text-blue-500 hover:text-blue-700">
                                     View All Purchases →
                                 </Link>
                             </div>
@@ -113,16 +124,13 @@ const { props } = usePage();
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6">
                                 <h3 class="text-lg font-semibold mb-4">Expiring Medicines</h3>
-                                <div class="space-y-3">
-                                    <div v-for="medicine in props.expiringMedicines" 
-                                         :key="medicine.id" 
-                                         class="flex justify-between items-center border-b pb-2">
+                                <!-- Scrollable Container -->
+                                <div class="space-y-3 overflow-y-auto max-h-64">
+                                    <div v-for="medicine in props.expiringMedicines" :key="medicine.id" class="flex justify-between items-center border-b pb-2">
                                         <div>
                                             <p class="font-medium">{{ medicine.name }}</p>
                                             <p class="text-sm">{{ medicine.dosage }}</p>
-                                            <p class="text-sm text-gray-500">
-                                                Expires: {{ new Date(medicine.expdate).toLocaleDateString() }}
-                                            </p>
+                                            <p class="text-sm text-gray-500">Expires: {{ new Date(medicine.expdate).toLocaleDateString() }}</p>
                                         </div>
                                         <div class="text-right">
                                             <span :class="{
@@ -144,8 +152,7 @@ const { props } = usePage();
                                         </div>
                                     </div>
                                 </div>
-                                <Link :href="route('admin.medicines.index')" 
-                                      class="mt-4 text-blue-500 hover:text-blue-700">
+                                <Link :href="route('admin.medicines.index')" class="mt-4 text-blue-500 hover:text-blue-700">
                                     View All Medicines →
                                 </Link>
                             </div>
@@ -156,3 +163,4 @@ const { props } = usePage();
         </div>
     </AuthenticatedLayout>
 </template>
+

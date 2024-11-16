@@ -1,20 +1,25 @@
 <template>
   <AdminAuthenticatedLayout>
+
     <Head title="Purchase Management" />
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-12">
       <!-- Flash Messages -->
-      <div v-if="$page.props.flash.success" 
-           class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+      <div v-if="$page.props.flash.success"
+        class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
         {{ $page.props.flash.success }}
       </div>
 
-      <div v-if="$page.props.flash.error"
-           class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+      <div v-if="$page.props.flash.error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
         {{ $page.props.flash.error }}
       </div>
 
       <h2 class="text-2xl font-semibold mb-6">Purchase Management</h2>
+      <button 
+          @click="generateReport"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+          Generate Reports
+        </button>
 
       <!-- Purchase List -->
       <div class="bg-white shadow-sm rounded-lg overflow-hidden">
@@ -64,54 +69,46 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-y-2">
                 <!-- Confirm button for pending purchases -->
-                <button v-if="purchase.status === 'pending'"
-                        @click="confirmPurchase(purchase.id)"
-                        :disabled="isLoading(purchase.id)"
-                        class="w-full text-blue-600 hover:text-blue-900 bg-blue-100 px-3 py-1 rounded-full">
+                <button v-if="purchase.status === 'pending'" @click="confirmPurchase(purchase.id)"
+                  :disabled="isLoading(purchase.id)"
+                  class="w-full text-blue-600 hover:text-blue-900 bg-blue-100 px-3 py-1 rounded-full">
                   {{ isLoading(purchase.id) ? 'Processing...' : 'Confirm Purchase' }}
                 </button>
 
                 <!-- Mark as Ready button for confirmed purchases -->
-                <button v-if="purchase.status === 'confirmed'"
-                        @click="markAsReady(purchase.id)"
-                        :disabled="isLoading(purchase.id)"
-                        class="w-full text-green-600 hover:text-green-900 bg-green-100 px-3 py-1 rounded-full">
+                <button v-if="purchase.status === 'confirmed'" @click="markAsReady(purchase.id)"
+                  :disabled="isLoading(purchase.id)"
+                  class="w-full text-green-600 hover:text-green-900 bg-green-100 px-3 py-1 rounded-full">
                   {{ isLoading(purchase.id) ? 'Processing...' : 'Mark Ready for Pickup' }}
                 </button>
 
                 <!-- Complete Verification button when user has verified -->
-                <button v-if="purchase.status === 'verified'"
-                        @click="verifyPickup(purchase.id)"
-                        :disabled="isLoading(purchase.id)"
-                        class="w-full text-purple-600 hover:text-purple-900 bg-purple-100 px-3 py-1 rounded-full">
+                <button v-if="purchase.status === 'verified'" @click="verifyPickup(purchase.id)"
+                  :disabled="isLoading(purchase.id)"
+                  class="w-full text-purple-600 hover:text-purple-900 bg-purple-100 px-3 py-1 rounded-full">
                   {{ isLoading(purchase.id) ? 'Processing...' : 'Complete Verification' }}
                 </button>
 
                 <!-- Status messages -->
                 <div v-if="purchase.verification_status" class="text-sm">
-                  <span v-if="purchase.verification_status === 'verified_by_user'"
-                        class="text-purple-600 font-medium">
+                  <span v-if="purchase.verification_status === 'verified_by_user'" class="text-purple-600 font-medium">
                     User verified pickup - Click to complete
                   </span>
-                  <span v-if="purchase.verification_status === 'waiting_user'"
-                        class="text-yellow-600">
+                  <span v-if="purchase.verification_status === 'waiting_user'" class="text-yellow-600">
                     Waiting for user verification
                   </span>
-                  <span v-if="purchase.verification_status === 'completed'"
-                        class="text-green-600">
+                  <span v-if="purchase.verification_status === 'completed'" class="text-green-600">
                     Pickup Complete ✓
                   </span>
                 </div>
 
                 <!-- Ready for pickup status -->
-                <div v-if="purchase.ready_for_pickup && !purchase.user_pickup_verified" 
-                     class="text-sm text-blue-600">
+                <div v-if="purchase.ready_for_pickup && !purchase.user_pickup_verified" class="text-sm text-blue-600">
                   Waiting for user pickup
                 </div>
 
                 <!-- Completed status -->
-                <div v-if="purchase.status === 'completed'" 
-                     class="text-sm text-green-600 font-medium">
+                <div v-if="purchase.status === 'completed'" class="text-sm text-green-600 font-medium">
                   Order Completed ✓
                 </div>
 
@@ -133,30 +130,22 @@
                         ✗ Payment rejected
                       </template>
                     </span>
-                    
+
                     <!-- View Payment Proof Button -->
-                    <a 
-                      v-if="purchase.payment_proof"
-                      :href="purchase.payment_proof_url"
-                      target="_blank"
-                      class="text-blue-500 hover:text-blue-700 underline text-sm"
-                    >
+                    <a v-if="purchase.payment_proof" :href="purchase.payment_proof_url" target="_blank"
+                      class="text-blue-500 hover:text-blue-700 underline text-sm">
                       View Proof
                     </a>
                   </div>
 
                   <!-- Verification Buttons -->
                   <div v-if="purchase.payment_status === 'pending'" class="flex space-x-2">
-                    <button 
-                      @click="verifyPayment(purchase.id, 'verified')"
-                      class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-                    >
+                    <button @click="verifyPayment(purchase.id, 'verified')"
+                      class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm">
                       Verify Payment
                     </button>
-                    <button 
-                      @click="verifyPayment(purchase.id, 'rejected')"
-                      class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                    >
+                    <button @click="verifyPayment(purchase.id, 'rejected')"
+                      class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
                       Reject Payment
                     </button>
                   </div>
@@ -190,6 +179,29 @@ const props = defineProps({
 });
 
 const loadingStates = ref(new Set());
+
+function generateReport() {
+  Swal.fire({
+    title: 'Generate Report',
+    text: 'Do you want to generate a report of all purchases?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, generate it',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      router.get(route('admin.purchase.report'), {}, {
+        onSuccess: () => {
+          Swal.fire('Report Generated!', 'Your report is ready.', 'success');
+        },
+        onError: () => {
+          Swal.fire('Error!', 'Failed to generate the report.', 'error');
+        }
+      });
+    }
+  });
+}
+
 
 function setLoading(id, isLoading) {
   if (isLoading) {
@@ -302,7 +314,7 @@ function formatStatus(status) {
 
 function verifyPayment(purchaseId, status) {
   const action = status === 'verified' ? 'verify' : 'reject';
-  
+
   Swal.fire({
     title: `${action.charAt(0).toUpperCase() + action.slice(1)} Payment?`,
     text: `Are you sure you want to ${action} this payment?`,
@@ -348,6 +360,7 @@ function verifyPayment(purchaseId, status) {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }

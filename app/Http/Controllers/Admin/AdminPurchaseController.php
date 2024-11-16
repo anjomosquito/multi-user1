@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Purchase;
+use App\Models\Medicine;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -14,6 +15,26 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminPurchaseController extends Controller
 {
+    
+    public function generateReport()
+    {
+        $purchases = Purchase::with('user')
+            ->selectRaw('
+            DATE(purchase_date) as date,
+            SUM(quantity * mprice) as total_sales,
+            SUM(quantity) as total_quantity,
+            COUNT(id) as total_purchases
+        ')
+            ->where('status', 'Completed') // Only include purchases with 'Completed' status
+            ->groupBy('date')
+            ->orderBy('date', 'desc')
+            ->get();
+
+        return inertia('Admin/Reports/Index', ['reports' => $purchases]);
+    }
+
+
+
     public function index()
     {
         $purchases = Purchase::with('user')
@@ -22,7 +43,7 @@ class AdminPurchaseController extends Controller
             ->map(function ($purchase) {
                 $pickup_deadline = $purchase->pickup_deadline ? \Carbon\Carbon::parse($purchase->pickup_deadline) : null;
                 $now = now();
-                
+
                 // Auto cancel if past deadline
                 if ($pickup_deadline && $now->isAfter($pickup_deadline) && $purchase->ready_for_pickup) {
                     $this->cancelExpiredPickup($purchase);
@@ -64,14 +85,14 @@ class AdminPurchaseController extends Controller
     {
         try {
             $purchase = Purchase::findOrFail($id);
-            
+
             \DB::transaction(function () use ($purchase) {
                 $purchase->update([
                     'status' => 'confirmed',
                     'confirmed_at' => now(),
                     'confirmed_by' => auth('admin')->id()
                 ]);
-                
+
                 // Send confirmation email using user's email
                 $purchase->sendNotification('confirmed');
             });
@@ -89,14 +110,14 @@ class AdminPurchaseController extends Controller
     public function markAsReady($id)
     {
         $purchase = Purchase::findOrFail($id);
-        
+
         \DB::transaction(function () use ($purchase) {
             $purchase->update([
                 'ready_for_pickup' => true,
                 'pickup_ready_at' => now(),
                 'pickup_deadline' => now()->addHours(24)
             ]);
-            
+
             // Send ready for pickup email
             try {
                 $purchase->sendNotification('ready');
@@ -112,11 +133,11 @@ class AdminPurchaseController extends Controller
     public function markAsCompleted($id)
     {
         $purchase = Purchase::findOrFail($id);
-        
+
         if (!$purchase->ready_for_pickup) {
             return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
         }
-        
+
         $purchase->update([
             'status' => 'completed',
             'completed_at' => now()
@@ -128,7 +149,7 @@ class AdminPurchaseController extends Controller
     public function markAsPickedUp($id)
     {
         $purchase = Purchase::findOrFail($id);
-        
+
         if (!$purchase->ready_for_pickup) {
             return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
         }
@@ -136,7 +157,7 @@ class AdminPurchaseController extends Controller
         if (!$purchase->user_pickup_verified) {
             return redirect()->back()->with('error', 'User must verify pickup first');
         }
-        
+
         \DB::transaction(function () use ($purchase) {
             $purchase->update([
                 'admin_pickup_verified' => true,
@@ -153,14 +174,14 @@ class AdminPurchaseController extends Controller
     public function verifyPickup($id)
     {
         $purchase = Purchase::findOrFail($id);
-        
+
         \DB::transaction(function () use ($purchase) {
             $purchase->update([
                 'admin_pickup_verified' => true,
                 'admin_verified_at' => now(),
                 'status' => 'completed'
             ]);
-            
+
             // Send completion email
             $purchase->sendNotification('completed');
         });
@@ -177,7 +198,7 @@ class AdminPurchaseController extends Controller
     public function verifyPayment(Request $request, $id)
     {
         $purchase = Purchase::findOrFail($id);
-        
+
         $request->validate([
             'status' => 'required|in:verified,rejected'
         ]);

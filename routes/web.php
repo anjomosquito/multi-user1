@@ -102,7 +102,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     //Purchase ADMIN
     Route::get('admin/purchase/index', [AdminPurchaseController::class, 'index'])->name('admin.purchase.index');
-    
+    Route::get('/admin/purchase/report', [AdminPurchaseController::class, 'generateReport'])->name('admin.purchase.report');
 
     //ADMIN DASHBOARD
     Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
