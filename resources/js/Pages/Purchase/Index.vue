@@ -138,6 +138,7 @@
             </div>
             <div class="mt-4 space-y-2">
               <p><strong>Transaction No:</strong> {{ selectedReport.transaction_number }}</p>
+              <p><strong>Customer Name:</strong> {{ selectedReport.user?.name || 'Unknown User' }}</p>
               <p><strong>Medicine:</strong> {{ selectedReport.name }}</p>
               <p><strong>Quantity:</strong> {{ selectedReport.quantity }}</p>
               <p><strong>Total:</strong> ₱{{ selectedReport.total_amount }}</p>

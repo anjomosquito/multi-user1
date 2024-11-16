@@ -57,12 +57,14 @@ class PurchaseController extends Controller
     public function index()
     {
         $purchases = Purchase::where('user_id', Auth::id())
+            ->with('user') // Load the user relationship
             ->latest()
             ->get()
             ->map(function ($purchase) {
                 return [
                     'id' => $purchase->id,
                     'name' => $purchase->name,
+                    'user' => $purchase->user ? ['name' => $purchase->user->name] : null, // Include the user's name
                     'quantity' => $purchase->quantity,
                     'mprice' => $purchase->mprice,
                     'total_amount' => $purchase->mprice * $purchase->quantity,
@@ -88,6 +90,7 @@ class PurchaseController extends Controller
             'purchases' => $purchases
         ]);
     }
+
 
     public function cancel($id)
     {
@@ -118,11 +121,11 @@ class PurchaseController extends Controller
     public function verifyPickup($id)
     {
         $purchase = Purchase::where('user_id', Auth::id())->findOrFail($id);
-        
+
         if (!$purchase->ready_for_pickup) {
             return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
         }
-        
+
         \DB::transaction(function () use ($purchase) {
             $purchase->update([
                 'user_pickup_verified' => true,
@@ -142,7 +145,7 @@ class PurchaseController extends Controller
         if ($purchase->admin_pickup_verified) {
             return redirect()->back()->with('success', 'Pickup verified and order completed.');
         }
-        
+
         return redirect()->back()->with('success', 'Pickup verified. Waiting for admin verification.');
     }
 
