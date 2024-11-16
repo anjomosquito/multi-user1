@@ -26,6 +26,7 @@
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction No</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Medicine</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
@@ -37,6 +38,7 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="purchase in purchases" :key="purchase.id" class="hover:bg-gray-50">
+              <td class="px-6 py-4">{{ purchase.transaction_number }}</td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">
                   {{ purchase.user?.name || 'Unknown User' }}
@@ -63,6 +65,13 @@
                 }">
                   {{ formatStatus(purchase.status) }}
                 </span>
+                <div v-if="purchase.status === 'rejected' || purchase.status === 'completed'" class="mt-2">
+                  <button @click="viewReport(purchase)"
+                    class="px-2 py-1 bg-green-200 hover:bg-green-300 text-gray-800 rounded text-xs font-medium">
+                    View Report
+                  </button>
+
+                </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {{ new Date(purchase.created_at).toLocaleDateString() }}
@@ -160,6 +169,40 @@
           <div class="text-gray-500">No purchases found</div>
         </div>
       </div>
+      <!-- Floating Modal -->
+      <teleport to="body">
+        <div v-if="selectedReport" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg transition-transform transform scale-95"
+            role="dialog" aria-modal="true">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800">Purchase Receipt</h3>
+              <button @click="closeModal" class="text-gray-400 hover:text-gray-500 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div class="mt-4 space-y-2">
+              <p><strong>Transaction No:</strong> {{ selectedReport.transaction_number }}</p>
+              <p><strong>Customer Name:</strong> {{ selectedReport.user?.name || 'Unknown User' }}</p>
+              <p><strong>Medicine:</strong> {{ selectedReport.name }}</p>
+              <p><strong>Quantity:</strong> {{ selectedReport.quantity }}</p>
+              <p><strong>Total:</strong> ₱{{ selectedReport.total_amount }}</p>
+              <p><strong>Status:</strong> {{ formatStatus(selectedReport.status) }}</p>
+              <p><strong>Date:</strong> {{ new Date(selectedReport.created_at).toLocaleString() }}</p>
+              <p v-if="selectedReport.pickup_deadline">
+                <strong>Pickup Deadline:</strong>
+                {{ new Date(selectedReport.pickup_deadline).toLocaleString() }}
+              </p>
+            </div>
+            <button @click="closeModal"
+              class="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition">
+              Close
+            </button>
+          </div>
+        </div>
+      </teleport>
     </div>
   </AdminAuthenticatedLayout>
 </template>
@@ -177,7 +220,15 @@ const props = defineProps({
     required: true
   }
 });
+const selectedReport = ref(null);
 
+function viewReport(purchase) {
+  selectedReport.value = purchase;
+}
+
+function closeModal() {
+  selectedReport.value = null;
+}
 const loadingStates = ref(new Set());
 
 function generateReport() {

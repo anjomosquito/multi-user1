@@ -61,6 +61,7 @@ class AdminPurchaseController extends Controller
                     'dosage' => $purchase->dosage,
                     'total_amount' => $purchase->mprice * $purchase->quantity,
                     'status' => $this->determineStatus($purchase),
+                    'transaction_number' => str_pad($purchase->id, 5, '0', STR_PAD_LEFT),
                     'ready_for_pickup' => $purchase->ready_for_pickup,
                     'pickup_ready_at' => $purchase->pickup_ready_at,
                     'pickup_deadline' => $purchase->pickup_deadline,
