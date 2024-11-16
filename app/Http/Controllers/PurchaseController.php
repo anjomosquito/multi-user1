@@ -80,6 +80,7 @@ class PurchaseController extends Controller
                     'payment_proof' => $purchase->payment_proof,
                     'payment_proof_url' => $purchase->payment_proof_url,
                     'payment_status' => $purchase->payment_status,
+                    'transaction_number' => str_pad($purchase->id, 5, '0', STR_PAD_LEFT),
                 ];
             });
 
