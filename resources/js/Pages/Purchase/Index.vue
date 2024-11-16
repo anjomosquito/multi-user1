@@ -56,17 +56,17 @@
                   'px-2 py-1 rounded text-xs font-medium': true,
                   'bg-yellow-100 text-yellow-800': purchase.status === 'pending',
                   'bg-blue-100 text-blue-800': purchase.status === 'confirmed',
-                  'bg-green-100 text-green-800': purchase.status === 'completed',
+                  'bg-green-200 text-green-800 hover:bg-green-300': purchase.status === 'completed',
                   'bg-red-100 text-red-800': purchase.status === 'cancelled'
                 }">
                   {{ formatStatus(purchase.status) }}
                 </span>
                 <div v-if="purchase.status === 'rejected' || purchase.status === 'completed'" class="mt-2">
                   <button @click="viewReport(purchase)"
-                    class="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-xs font-medium">
+                    class="px-2 py-1 bg-green-200 hover:bg-green-300 text-gray-800 rounded text-xs font-medium">
                     View Report
                   </button>
-                  
+
                 </div>
               </td>
               <td class="px-6 py-4">
@@ -125,18 +125,31 @@
       <!-- Floating Modal -->
       <teleport to="body">
         <div v-if="selectedReport" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div class="bg-white p-6 rounded shadow-lg w-96">
-            <h3 class="font-semibold text-lg mb-2">Purchase Receipt</h3>
-            <p><strong>Transaction No:</strong> {{ selectedReport.transaction_number }}</p>
-            <p><strong>Medicine:</strong> {{ selectedReport.name }}</p>
-            <p><strong>Quantity:</strong> {{ selectedReport.quantity }}</p>
-            <p><strong>Total:</strong> ₱{{ selectedReport.total_amount }}</p>
-            <p><strong>Status:</strong> {{ formatStatus(selectedReport.status) }}</p>
-            <p><strong>Date:</strong> {{ new Date(selectedReport.created_at).toLocaleString() }}</p>
-            <p v-if="selectedReport.pickup_deadline">
-              <strong>Pickup Deadline:</strong> {{ new Date(selectedReport.pickup_deadline).toLocaleString() }}
-            </p>
-            <button @click="closeModal" class="mt-4 w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
+          <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg transition-transform transform scale-95"
+            role="dialog" aria-modal="true">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800">Purchase Receipt</h3>
+              <button @click="closeModal" class="text-gray-400 hover:text-gray-500 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div class="mt-4 space-y-2">
+              <p><strong>Transaction No:</strong> {{ selectedReport.transaction_number }}</p>
+              <p><strong>Medicine:</strong> {{ selectedReport.name }}</p>
+              <p><strong>Quantity:</strong> {{ selectedReport.quantity }}</p>
+              <p><strong>Total:</strong> ₱{{ selectedReport.total_amount }}</p>
+              <p><strong>Status:</strong> {{ formatStatus(selectedReport.status) }}</p>
+              <p><strong>Date:</strong> {{ new Date(selectedReport.created_at).toLocaleString() }}</p>
+              <p v-if="selectedReport.pickup_deadline">
+                <strong>Pickup Deadline:</strong>
+                {{ new Date(selectedReport.pickup_deadline).toLocaleString() }}
+              </p>
+            </div>
+            <button @click="closeModal"
+              class="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition">
               Close
             </button>
           </div>
