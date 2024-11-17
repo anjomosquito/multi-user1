@@ -7,14 +7,15 @@ const props = defineProps({
 });
 
 function confirmDelete(medicineId) {
-  if (confirm('Are you sure you want to delete this medicine?')) {
-    // Call the delete endpoint for the medicine
-    $inertia.delete(`/admin/medicines/${medicineId}`);
-  }
+    if (confirm('Are you sure you want to delete this medicine?')) {
+        // Call the delete endpoint for the medicine
+        $inertia.delete(`/admin/medicines/${medicineId}`);
+    }
 }
 </script>
 
 <template>
+
     <Head title="Inventory" />
 
     <AuthenticatedLayout>
@@ -27,7 +28,8 @@ function confirmDelete(medicineId) {
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <thead
+                                class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
                                     <th scope="col" class="px-6 py-3">Name</th>
                                     <th scope="col" class="px-6 py-3">Low Price</th>
@@ -40,9 +42,12 @@ function confirmDelete(medicineId) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="medicine in medicines" :key="medicine.id"
-                                    :class="{'bg-red-100 text-red-700': medicine.quantity === 0}">
-                                    <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                <tr v-for="medicine in medicines" :key="medicine.id" :class="{
+                                    'bg-red-100 text-red-700': medicine.status === 'disabled',
+                                    'bg-white text-gray-900': medicine.status !== 'disabled'
+                                }">
+                                    <th scope="row"
+                                        class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                         {{ medicine.name }}
                                     </th>
                                     <td class="px-6 py-4">₱{{ medicine.lprice }}</td>
@@ -52,11 +57,11 @@ function confirmDelete(medicineId) {
                                     <td class="px-6 py-4">{{ medicine.dosage }}</td>
                                     <td class="px-6 py-4">{{ medicine.expdate }}</td>
                                     <td class="px-6 py-4">
-                                        <span :class="medicine.status === 'disabled' ? 'text-red-600' : 'text-green-600'">
+                                        <span
+                                            :class="medicine.status === 'disabled' ? 'text-red-600' : 'text-green-600'">
                                             {{ medicine.status }}
                                         </span>
                                     </td>
-                                    
                                 </tr>
                             </tbody>
                         </table>
