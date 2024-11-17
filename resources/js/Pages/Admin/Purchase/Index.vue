@@ -15,11 +15,9 @@
       </div>
 
       <h2 class="text-2xl font-semibold mb-6">Purchase Management</h2>
-      <button 
-          @click="generateReport"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-          Generate Reports
-        </button>
+      <button @click="generateReport" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+        Generate Reports
+      </button>
 
       <!-- Purchase List -->
       <div class="bg-white shadow-sm rounded-lg overflow-hidden">
@@ -60,7 +58,7 @@
                   'bg-yellow-100 text-yellow-800': purchase.status === 'pending',
                   'bg-blue-100 text-blue-800': purchase.status === 'confirmed',
                   'bg-purple-100 text-purple-800': purchase.status === 'verified',
-                  'bg-green-100 text-green-800': purchase.status === 'completed',
+                  'bg-green-400 text-black-800': purchase.status === 'completed',
                   'bg-red-100 text-red-800': purchase.status === 'cancelled'
                 }">
                   {{ formatStatus(purchase.status) }}
@@ -175,7 +173,9 @@
           <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg transition-transform transform scale-95"
             role="dialog" aria-modal="true">
             <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800">Purchase Receipt</h3>
+              <h3 class="text-lg font-semibold text-gray-800" style="font-family: 'Courier New', Courier, monospace;">
+                Purchase Receipt
+              </h3>
               <button @click="closeModal" class="text-gray-400 hover:text-gray-500 transition">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                   stroke="currentColor" class="w-6 h-6">
@@ -183,7 +183,9 @@
                 </svg>
               </button>
             </div>
-            <div class="mt-4 space-y-2">
+            <div
+              style="font-family: 'Courier New', Courier, monospace; max-width: 300px; margin: auto; padding: 20px; border: 1px solid #ccc; background-color: #f7f7f7;">
+              <h2 style="text-align: center; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">Receipt</h2>
               <p><strong>Transaction No:</strong> {{ selectedReport.transaction_number }}</p>
               <p><strong>Customer Name:</strong> {{ selectedReport.user?.name || 'Unknown User' }}</p>
               <p><strong>Medicine:</strong> {{ selectedReport.name }}</p>
@@ -195,14 +197,22 @@
                 <strong>Pickup Deadline:</strong>
                 {{ new Date(selectedReport.pickup_deadline).toLocaleString() }}
               </p>
+              <p style="text-align: center; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px;">Thank you
+                for
+                your purchase!</p>
             </div>
-            <button @click="closeModal"
-              class="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition">
-              Close
-            </button>
+            <div class="flex justify-center mt-6">
+              <button @click="closeModal"
+                class="align-items-center w-4/12 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition">
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </teleport>
+
+
+
     </div>
   </AdminAuthenticatedLayout>
 </template>

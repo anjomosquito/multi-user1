@@ -162,3 +162,4 @@ watch(searchQuery, (newValue) => {
         </main>
     </AuthenticatedLayout>
 </template>
+

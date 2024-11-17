@@ -13,6 +13,7 @@ class AdminInventoryController extends Controller
 {
     public function index()
     {
+        Medicine::where('quantity', 0)->update(['status' => 'disabled']);
         // You can pass data to the Vue component if needed, for example:
         $medicines = Medicine::all(); // Fetch inventory data from the database
 
