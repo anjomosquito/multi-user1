@@ -37,7 +37,6 @@ function confirmDelete(medicineId) {
                                     <th scope="col" class="px-6 py-3">Dosage</th>
                                     <th scope="col" class="px-6 py-3">Exp Date</th>
                                     <th scope="col" class="px-6 py-3">Status</th>
-                                    <th scope="col" class="px-6 py-3">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -57,16 +56,7 @@ function confirmDelete(medicineId) {
                                             {{ medicine.status }}
                                         </span>
                                     </td>
-                                    <td class="flex px-6 py-4 space-x-2">
-                                        <Link :href="'/admin/medicines/' + medicine.id + '/edit'"
-                                              class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">
-                                            Edit
-                                        </Link>
-                                        <button @click="confirmDelete(medicine.id)"
-                                                class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
-                                            Delete
-                                        </button>
-                                    </td>
+                                    
                                 </tr>
                             </tbody>
                         </table>

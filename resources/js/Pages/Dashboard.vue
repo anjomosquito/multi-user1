@@ -29,7 +29,7 @@ defineProps({
                     <div class="col-span-12 md:col-span-4">
                         <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                             <div class="p-6 text-gray-900 dark:text-gray-100">
-                                <h3 class="text-lg font-semibold">Available Medicines:</h3>
+                                <h3 class="text-lg font-semibold">Total Medicines:</h3>
                                 <p class="text-2xl">{{ medicineCount }}</p>
                             </div>
                         </div>

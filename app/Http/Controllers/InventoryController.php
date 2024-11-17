@@ -17,15 +17,18 @@ class InventoryController extends Controller
     {
         try {
             $query = Medicine::query();
-            
+
             if ($request->has('search')) {
                 $query->search($request->search);
             }
-            
+
             $medicines = $query->where('quantity', '>', 0)
-                              ->latest()
-                              ->paginate(10);
-            
+                           ->where('status', '!=', 'disabled')  // Exclude disabled medicines
+                           ->latest()
+                           ->paginate(10);
+            Medicine::where('quantity', 0)->update(['status' => 'disabled']);
+
+
             return Inertia::render('Medicines/Index', [
                 'medicines' => $medicines->items() ?? [],
                 'filters' => $request->only(['search'])
@@ -57,11 +60,11 @@ class InventoryController extends Controller
     public function dashboard()
     {
         $user = Auth::user();
-        
+
         // Get user-specific data
         $medicineCount = Medicine::count();
         $purchaseCount = Purchase::where('user_id', $user->id)->count();
-        
+
         // Get recent purchases with medicine details
         $recentPurchases = Purchase::where('user_id', $user->id)
             ->with('medicine')
