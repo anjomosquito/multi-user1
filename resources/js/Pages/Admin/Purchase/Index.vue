@@ -15,15 +15,27 @@
 
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-semibold">Purchase Management</h2>
-        <button 
-          @click="showReportModal = true"
-          class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Generate Reports
-        </button>
+        <div class="flex space-x-4">
+          <!-- Barcode Scanner Button -->
+          <button 
+            @click="startScanning"
+            class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2m0 0H8m0 0V20m0-6H4m12 0h2M3 3h18M3 21h18" />
+            </svg>
+            Scan Barcode
+          </button>
+          <button 
+            @click="showReportModal = true"
+            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Generate Reports
+          </button>
+        </div>
       </div>
 
       <!-- Purchase List -->
@@ -187,6 +199,38 @@
         :receipt-url="receiptUrl"
         @close="showReceiptModal = false"
       />
+      <!-- Barcode Scanner Modal -->
+      <Modal :show="showScannerModal" @close="closeScannerModal" :max-width="'2xl'">
+        <div class="p-6">
+          <h2 class="text-lg font-medium mb-4">Scan Barcode</h2>
+          <div class="relative">
+            <div id="interactive" class="viewport w-full h-[300px] bg-black mb-4">
+              <!-- Loading message -->
+              <div v-if="isScannerLoading" class="absolute inset-0 flex items-center justify-center text-white">
+                Loading camera...
+              </div>
+            </div>
+          </div>
+          <div v-if="scannedCode" class="mb-4 p-4 bg-green-50 rounded-lg">
+            <p class="text-sm text-gray-600">Scanned Code:</p>
+            <p class="font-medium">{{ scannedCode }}</p>
+          </div>
+          <div class="flex justify-end space-x-3">
+            <button
+              @click="restartScanner"
+              class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+            >
+              Scan Again
+            </button>
+            <button
+              @click="closeScannerModal"
+              class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   </AdminAuthenticatedLayout>
 </template>
@@ -198,8 +242,10 @@ import AdminAuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import ReportModal from '@/Components/ReportModal.vue';
 import ReceiptModal from '@/Components/ReceiptModal.vue';
+import Modal from '@/Components/Modal.vue';
 import Swal from 'sweetalert2';
 import axios from 'axios';
+import Quagga from 'quagga';
 
 const props = defineProps({
   purchases: {
@@ -213,6 +259,9 @@ const showReceiptModal = ref(false);
 const receiptUrl = ref('');
 const selectedReport = ref(null);
 const loadingStates = ref(new Set());
+const showScannerModal = ref(false);
+const scannedCode = ref('');
+const isScannerLoading = ref(true);
 
 function viewReceipt(purchase) {
   receiptUrl.value = route('purchase.receipt', { 
@@ -381,6 +430,74 @@ function verifyPayment(purchaseId, status) {
     }
   });
 }
+
+function startScanning() {
+  showScannerModal.value = true;
+  isScannerLoading.value = true;
+  nextTick(() => {
+    initializeScanner();
+  });
+}
+
+function initializeScanner() {
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target: document.querySelector("#interactive"),
+      constraints: {
+        width: 640,
+        height: 480,
+        facingMode: "environment"
+      },
+    },
+    locator: {
+      patchSize: "medium",
+      halfSample: true
+    },
+    numOfWorkers: 2,
+    decoder: {
+      readers: ["ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader", "upc_reader"]
+    },
+    locate: true
+  }, function(err) {
+    if (err) {
+      console.error(err);
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to start camera. Please make sure you have given camera permissions.',
+        icon: 'error'
+      });
+      return;
+    }
+    Quagga.start();
+    isScannerLoading.value = false;
+  });
+
+  Quagga.onDetected(function(result) {
+    if (result.codeResult.code) {
+      scannedCode.value = result.codeResult.code;
+      // Play a success sound
+      const audio = new Audio('/sounds/beep.mp3');
+      audio.play();
+      // Temporarily stop scanning
+      Quagga.stop();
+    }
+  });
+}
+
+function restartScanner() {
+  scannedCode.value = '';
+  isScannerLoading.value = true;
+  initializeScanner();
+}
+
+function closeScannerModal() {
+  Quagga.stop();
+  showScannerModal.value = false;
+  scannedCode.value = '';
+  isScannerLoading.value = true;
+}
 </script>
 
 <style scoped>
@@ -392,10 +509,26 @@ function verifyPayment(purchaseId, status) {
   from {
     transform: rotate(0deg);
   }
-
   to {
     transform: rotate(360deg);
   }
+}
+
+#interactive.viewport {
+  position: relative;
+}
+
+#interactive.viewport > canvas, #interactive.viewport > video {
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.drawingBuffer {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 .status-badge {

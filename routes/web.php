@@ -15,6 +15,8 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Admin\AnnouncementController;
+use App\Http\Controllers\AnnouncementController as UserAnnouncementController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -54,6 +56,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/reports/payment', [ReportController::class, 'generatePaymentReport'])->name('reports.payment');
     Route::post('/reports/payment/download', [ReportController::class, 'downloadPaymentReport'])->name('reports.payment.download');
     Route::get('/purchase/receipt', [ReportController::class, 'viewReceipt'])->name('purchase.receipt');
+    // User Announcement Routes
+    Route::get('/announcements', [UserAnnouncementController::class, 'index'])->name('announcements.index');
+    Route::get('/announcements/{announcement}', [UserAnnouncementController::class, 'show'])->name('announcements.show');
 });
 
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -105,6 +110,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/purchase/{id}/verify-pickup', [AdminPurchaseController::class, 'markAsPickedUp'])->name('purchase.verify-pickup');
         Route::post('/purchase/{id}/verify-payment', [AdminPurchaseController::class, 'verifyPayment'])->name('purchase.verify-payment');
         Route::get('/purchase/{purchase}/report', [AdminPurchaseController::class, 'generatePurchaseReport'])->name('purchase.report');
+        
+        // Announcement Routes
+        Route::resource('announcements', AnnouncementController::class);
     });
 });
 

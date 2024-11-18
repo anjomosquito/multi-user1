@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('announcements', function (Blueprint $table) {
             $table->id();
+            $table->string('title');
+            $table->text('content');
+            $table->foreignId('created_by')->constrained('admins')->onDelete('cascade');
+            $table->enum('status', ['draft', 'published'])->default('draft');
+            $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });
     }

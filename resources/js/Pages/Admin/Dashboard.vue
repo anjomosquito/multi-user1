@@ -19,7 +19,7 @@
 import AuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head, usePage, router } from '@inertiajs/vue3';
 import { Link } from '@inertiajs/vue3';
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, reactive } from 'vue';
 import Chart from 'chart.js/auto';
 
 const props = defineProps({
@@ -28,6 +28,10 @@ const props = defineProps({
     totalRevenue: Number,
     lowStockCount: Number,
     lowStockMedicines: {
+        type: Array,
+        default: () => []
+    },
+    recentAnnouncements: {
         type: Array,
         default: () => []
     },
@@ -249,6 +253,65 @@ watch(() => document.documentElement.classList.contains('dark'), (isDark) => {
     revenueChart.update();
   }
 }, { immediate: true });
+
+// Calculate previous period average
+const previousPeriodAverage = computed(() => {
+    if (!props.revenueData || props.revenueData.length === 0) return 0;
+    
+    const midPoint = Math.floor(props.revenueData.length / 2);
+    const previousPeriodData = props.revenueData.slice(0, midPoint);
+    
+    if (previousPeriodData.length === 0) return 0;
+    
+    const sum = previousPeriodData.reduce((acc, item) => acc + item.total, 0);
+    return sum / previousPeriodData.length;
+});
+
+// Update chart options
+const chartOptions = {
+    // ... existing chart options ...
+    plugins: {
+        tooltip: {
+            callbacks: {
+                label: (context) => `Revenue: ₱${context.raw.toLocaleString()}`
+            }
+        },
+        annotation: {
+            annotations: {
+                line1: {
+                    type: 'line',
+                    yMin: previousPeriodAverage.value,
+                    yMax: previousPeriodAverage.value,
+                    borderColor: 'rgba(255, 99, 132, 0.5)',
+                    borderWidth: 2,
+                    label: {
+                        content: 'Previous Period Average'
+                    }
+                }
+            }
+        }
+    }
+};
+
+// Add advanced filtering options
+const filters = reactive({
+  date_range: 'last_30_days',
+  category: 'all',
+  status: 'all',
+  sort_by: 'date',
+  sort_order: 'desc'
+});
+
+// Add search suggestions
+const searchSuggestions = computed(() => {
+  if (searchQuery.value.length < 2) return [];
+  return [
+    ...recentSearches.value,
+    ...popularItems.value.filter(item => 
+      item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+  ].slice(0, 5);
+});
 </script>
 
 <template>
@@ -480,6 +543,54 @@ watch(() => document.documentElement.classList.contains('dark'), (isDark) => {
 
                 <!-- Recent Activity Section -->
                 <div class="grid grid-cols-12 gap-4 mt-4">
+                    <!-- Recent Announcements -->
+                    <div class="col-span-12 md:col-span-4">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
+                            <div class="p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold">Recent Announcements</h3>
+                                    <Link :href="route('admin.announcements.index')" class="text-blue-500 hover:text-blue-700 text-sm">
+                                        Manage →
+                                    </Link>
+                                </div>
+                                <div class="space-y-4 overflow-y-auto max-h-[400px] custom-scrollbar">
+                                    <div v-for="announcement in props.recentAnnouncements" :key="announcement.id"
+                                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ announcement.title }}</h4>
+                                            <span :class="{
+                                                'px-2 py-1 rounded-full text-xs font-medium': true,
+                                                'bg-green-100 text-green-800': announcement.status === 'published',
+                                                'bg-gray-100 text-gray-800': announcement.status === 'draft'
+                                            }">
+                                                {{ announcement.status }}
+                                            </span>
+                                        </div>
+                                        <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{{ announcement.content }}</p>
+                                        <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
+                                            <span>{{ formatDate(announcement.created_at) }}</span>
+                                            <Link 
+                                                :href="route('admin.announcements.edit', announcement.id)"
+                                                class="text-blue-500 hover:text-blue-700"
+                                            >
+                                                Edit
+                                            </Link>
+                                        </div>
+                                    </div>
+                                    <div v-if="!props.recentAnnouncements.length" class="text-center py-4 text-gray-500">
+                                        <p>No recent announcements</p>
+                                        <Link
+                                            :href="route('admin.announcements.create')"
+                                            class="text-blue-500 hover:text-blue-700 text-sm mt-2 inline-block"
+                                        >
+                                            Create New Announcement →
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Recent Purchases -->
                     <div class="col-span-12 md:col-span-4">
                         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">

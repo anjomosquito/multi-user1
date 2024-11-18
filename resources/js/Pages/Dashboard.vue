@@ -1,15 +1,111 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
 
-defineProps({
-    medicineCount: Number,
-    purchaseCount: Number,
-    recentPurchases: Array,
-    totalSpent: Number,
-    availableMedicines: Array,
-    promoMedicines: Array
+const props = defineProps({
+    medicineCount: {
+        type: Number,
+        default: 0
+    },
+    purchaseCount: {
+        type: Number,
+        default: 0
+    },
+    recentPurchases: {
+        type: Array,
+        default: () => []
+    },
+    totalSpent: {
+        type: Number,
+        default: 0
+    },
+    availableMedicines: {
+        type: Array,
+        default: () => []
+    },
+    promoMedicines: {
+        type: Array,
+        default: () => []
+    },
+    announcements: {
+        type: Array,
+        default: () => []
+    }
 });
+
+const userPreferences = ref({
+    // Add user preferences here if needed
+    categories: [],
+    maxPrice: null,
+    preferredBrands: []
+});
+
+// Helper function to determine if medicine is relevant to user
+const isRelevantToUser = (medicine, preferences) => {
+    // Add your relevance logic here
+    return true; // Default to showing all medicines for now
+};
+
+// Add personalized recommendations
+const personalizedRecommendations = computed(() => {
+    return props.availableMedicines
+        .filter(medicine => {
+            return isRelevantToUser(medicine, userPreferences.value);
+        })
+        .slice(0, 3);
+});
+
+// Add quick actions
+const quickActions = [
+    {
+        label: 'Reorder Previous Purchase',
+        icon: 'refresh',
+        action: () => reorderLastPurchase()
+    },
+    {
+        label: 'View Prescriptions',
+        icon: 'document',
+        action: () => navigateToPrescriptions()
+    }
+];
+
+// Function stubs for quick actions
+const reorderLastPurchase = () => {
+    // Implement reorder functionality
+    console.log('Reordering last purchase...');
+};
+
+const navigateToPrescriptions = () => {
+    // Implement navigation to prescriptions
+    console.log('Navigating to prescriptions...');
+};
+
+// Monthly data for spending chart
+const monthlyLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+const monthlySpending = [300, 450, 280, 520, 390, 600];
+
+// Add interactive spending trends
+const spendingChart = {
+    type: 'line',
+    data: {
+        labels: monthlyLabels,
+        datasets: [{
+            label: 'Monthly Spending',
+            data: monthlySpending,
+            fill: true,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        }
+    }
+};
 </script>
 
 <template>
@@ -51,6 +147,38 @@ defineProps({
                             <div class="p-6 text-gray-900 dark:text-gray-100">
                                 <h3 class="text-lg font-semibold">Total Spent:</h3>
                                 <p class="text-2xl text-green-500">₱{{ totalSpent }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Announcements Section -->
+                <div class="mt-6">
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">Latest Announcements</h3>
+                                <Link :href="route('announcements.index')" class="text-blue-500 hover:text-blue-700 text-sm">
+                                    View All →
+                                </Link>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div v-if="announcements && announcements.length > 0">
+                                    <div v-for="announcement in announcements" :key="announcement.id"
+                                        class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                                        <Link :href="route('announcements.show', announcement.id)">
+                                            <h4 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100">{{ announcement.title }}</h4>
+                                            <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">{{ announcement.content }}</p>
+                                            <div class="flex justify-between items-center text-xs text-gray-500">
+                                                <span>By {{ announcement.admin?.name || 'Unknown' }}</span>
+                                                <span>{{ new Date(announcement.published_at).toLocaleDateString() }}</span>
+                                            </div>
+                                        </Link>
+                                    </div>
+                                </div>
+                                <div v-else class="text-gray-500 dark:text-gray-400 text-center py-4">
+                                    No announcements available.
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -1,0 +1,149 @@
+@startuml "Multi-User Pharmacy Management System - ER Diagram"
+
+skinparam class {
+    BackgroundColor White
+    ArrowColor Black
+    BorderColor Black
+    FontSize 14
+    FontName Arial
+}
+
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+
+title "Multi-User Pharmacy Management System\nEntity Relationship Diagram"
+
+' Entity Definitions
+class "Users" {
+    + id: BIGINT <<PK>>
+    --
+    name: VARCHAR(255)
+    email: VARCHAR(255) <<UNIQUE>>
+    password: VARCHAR(255)
+}
+
+class "Administrators" {
+    + id: BIGINT <<PK>>
+    --
+    name: VARCHAR(255)
+    email: VARCHAR(255) <<UNIQUE>>
+    password: VARCHAR(255)
+}
+
+class "Medicines" {
+    + id: BIGINT <<PK>>
+    # category_id: BIGINT <<FK>>
+    --
+    name: VARCHAR(255)
+    price_low: DECIMAL(10,2)
+    price_medium: DECIMAL(10,2)
+    price_high: DECIMAL(10,2)
+    quantity: INTEGER
+    dosage: VARCHAR(255)
+    expiry_date: DATE
+    status: VARCHAR(50)
+}
+
+class "Medicine Categories" {
+    + id: BIGINT <<PK>>
+    --
+    name: VARCHAR(255) <<UNIQUE>>
+}
+
+class "Purchases" {
+    + id: BIGINT <<PK>>
+    # user_id: BIGINT <<FK>>
+    # medicine_id: BIGINT <<FK>>
+    # confirmed_by: BIGINT <<FK>>
+    # payment_verified_by: BIGINT <<FK>>
+    --
+    quantity: INTEGER
+    transaction_number: VARCHAR(10) <<UNIQUE>>
+    status: VARCHAR(50)
+    payment_status: VARCHAR(50)
+    purchase_date: TIMESTAMP
+    confirmed_at: TIMESTAMP
+    payment_verified_at: TIMESTAMP
+}
+
+class "Shopping Carts" {
+    + id: BIGINT <<PK>>
+    # user_id: BIGINT <<FK>>
+    # medicine_id: BIGINT <<FK>>
+    --
+    quantity: INTEGER
+    price: DECIMAL(10,2)
+}
+
+class "Messages" {
+    + id: BIGINT <<PK>>
+    # user_id: BIGINT <<FK>>
+    --
+    content: TEXT
+    created_at: TIMESTAMP
+}
+
+class "Announcements" {
+    + id: BIGINT <<PK>>
+    # created_by: BIGINT <<FK>>
+    --
+    title: VARCHAR(255)
+    content: TEXT
+    status: VARCHAR(50) <<ENUM>>
+    published_at: TIMESTAMP
+}
+
+class "Inventory Logs" {
+    + id: BIGINT <<PK>>
+    # medicine_id: BIGINT <<FK>>
+    --
+    quantity_change: INTEGER
+    action_type: VARCHAR(50)
+    created_at: TIMESTAMP
+}
+
+' Relationships
+Users "1" --{ "0..*" Purchases : places
+Users "1" --{ "0..*" "Shopping Carts" : has
+Users "1" --{ "0..*" Messages : sends
+
+Medicines "1" --{ "0..*" Purchases : included in
+Medicines "1" --{ "0..*" "Shopping Carts" : added to
+Medicines "1" --{ "0..*" "Inventory Logs" : tracks
+
+"Medicine Categories" "1" --{ "0..*" Medicines : categorizes
+
+Administrators "1" --{ "0..*" Purchases : verifies
+Administrators "1" --{ "0..*" Purchases : confirms payment
+Administrators "1" --{ "0..*" Announcements : creates
+
+legend right
+    |= Symbol |= Meaning |
+    | + | Primary Key (PK) |
+    | # | Foreign Key (FK) |
+    | <<PK>> | Primary Key |
+    | <<FK>> | Foreign Key |
+    | <<UNIQUE>> | Unique Constraint |
+    | <<ENUM>> | Enumerated Type |
+    |===|
+    | Data Types |
+    | BIGINT | 8-byte integer |
+    | VARCHAR | Variable-length string |
+    | TEXT | Long text |
+    | DECIMAL | Fixed-point number |
+    | INTEGER | 4-byte integer |
+    | DATE | Date without time |
+    | TIMESTAMP | Date and time |
+    |===|
+    | Relationship Types |
+    | 1 -- 0..* | One-to-Many |
+    | 1 -- 1 | One-to-One |
+endlegend
+
+caption
+Entity Relationship Diagram for Multi-User Pharmacy Management System
+Shows entities, their attributes, data types, and relationships
+end caption
+
+@enduml
