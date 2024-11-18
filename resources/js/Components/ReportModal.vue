@@ -203,56 +203,71 @@ const printReport = async (url) => {
 };
 
 const generateReport = async () => {
+  if (!isValid.value) return;
+
   error.value = '';
   isLoading.value = true;
-  
+
   try {
+    const endpoint = selectedType.value === 'sales' 
+      ? route('admin.reports.sales.download')
+      : route('admin.reports.payments.download');
+
+    const response = await axios.post(endpoint, {
+      start_date: startDate.value,
+      end_date: endDate.value,
+      format: selectedFormat.value
+    }, {
+      responseType: selectedFormat.value === 'print' ? 'json' : 'blob'
+    });
+
+    // Handle print format
     if (selectedFormat.value === 'print') {
-      // For print format, we'll use an iframe
-      const queryParams = new URLSearchParams({
-        start_date: startDate.value,
-        end_date: endDate.value
-      }).toString();
-
-      // Use the correct route for payment reports
-      const reportUrl = selectedType.value === 'payment' 
-        ? `/admin/reports/payments/print?${queryParams}`
-        : `/admin/reports/sales/print?${queryParams}`;
-        
-      await printReport(reportUrl);
-
-      emit('success');
-      emit('close');
-    } else {
-      // For PDF and Excel formats, we'll download the file
-      const response = await axios.post(
-        `/admin/reports/${selectedType.value}/download`,
-        {
-          start_date: startDate.value,
-          end_date: endDate.value,
-          format: selectedFormat.value
-        },
-        {
-          responseType: 'blob'
-        }
-      );
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${selectedType.value}_report.${selectedFormat.value}`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      emit('success');
-      emit('close');
+      await printReport(response.data.url);
+      emit('success', 'Report generated successfully');
+      return;
     }
+
+    // Handle PDF/Excel download
+    const blob = new Blob([response.data], {
+      type: selectedFormat.value === 'pdf' 
+        ? 'application/pdf' 
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${selectedType.value}_report.${selectedFormat.value}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    emit('success', 'Report generated successfully');
   } catch (e) {
-    console.error('Error generating report:', e);
-    error.value = e.response?.data?.error || 'Error generating report. Please try again.';
+    console.error('Report generation error:', e);
+    
+    // Try to extract error message from response
+    let errorMessage = 'Error generating report. Please try again.';
+    if (e.response?.data) {
+      try {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const errorData = JSON.parse(reader.result);
+            error.value = errorData.error || errorData.message || errorMessage;
+          } catch {
+            error.value = errorMessage;
+          }
+        };
+        reader.readAsText(e.response.data);
+      } catch {
+        error.value = e.response.data?.error || e.response.data?.message || errorMessage;
+      }
+    } else {
+      error.value = errorMessage;
+    }
   } finally {
     isLoading.value = false;
   }

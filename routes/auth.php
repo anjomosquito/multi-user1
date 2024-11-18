@@ -71,7 +71,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('login', [AdminAuthenticatedSessionController::class, 'create'])
             ->name('login');
 
-        Route::post('login', [AdminAuthenticatedSessionController::class, 'store']);
+        Route::post('login', [AdminAuthenticatedSessionController::class, 'store'])
+            ->name('login');
 
         Route::get('forgot-password', [AdminPasswordResetLinkController::class, 'create'])
             ->name('password.request');

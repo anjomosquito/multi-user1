@@ -312,6 +312,12 @@ class ReportController extends Controller
     public function downloadSalesReport(Request $request)
     {
         try {
+            Log::info('Starting sales report download', [
+                'start_date' => $request->input('start_date'),
+                'end_date' => $request->input('end_date'),
+                'format' => $request->input('format')
+            ]);
+
             // Validate request
             $validated = $request->validate([
                 'start_date' => 'required|date',
@@ -323,6 +329,12 @@ class ReportController extends Controller
             $endDate = Carbon::parse($validated['end_date'])->endOfDay();
             $format = $validated['format'];
 
+            // Create temp directory if it doesn't exist
+            $tempPath = storage_path('app/temp');
+            if (!Storage::exists('temp')) {
+                Storage::makeDirectory('temp', 0755, true);
+            }
+
             // Get sales data
             $salesData = Purchase::with(['user', 'medicine'])
                 ->where('payment_status', 'verified')
@@ -332,9 +344,12 @@ class ReportController extends Controller
                     return [
                         'id' => $purchase->id,
                         'user' => $purchase->user->name ?? 'N/A',
-                        'medicine_name' => $purchase->medicine->name ?? 'N/A',
-                        'quantity' => $purchase->quantity,
-                        'price' => $purchase->mprice,
+                        'medicine' => [
+                            'name' => $purchase->medicine->name ?? 'N/A',
+                            'quantity' => $purchase->quantity,
+                            'price' => $purchase->mprice,
+                            'subtotal' => $purchase->quantity * $purchase->mprice
+                        ],
                         'total_amount' => $purchase->quantity * $purchase->mprice,
                         'payment_status' => $purchase->payment_status,
                         'created_at' => $purchase->created_at->format('Y-m-d H:i:s'),
@@ -348,7 +363,9 @@ class ReportController extends Controller
                 'average_order_value' => $salesData->count() > 0 
                     ? $salesData->sum('total_amount') / $salesData->count()
                     : 0,
-                'total_items' => $salesData->sum('quantity')
+                'total_items' => $salesData->sum(function ($sale) {
+                    return $sale['medicine']['quantity'];
+                })
             ];
 
             if ($format === 'pdf') {
@@ -356,7 +373,8 @@ class ReportController extends Controller
                     'sales_data' => $salesData,
                     'summary' => $summary,
                     'start_date' => $startDate->format('M d, Y'),
-                    'end_date' => $endDate->format('M d, Y')
+                    'end_date' => $endDate->format('M d, Y'),
+                    'single_purchase' => false
                 ]);
 
                 return $pdf->download('sales_report_' . now()->format('Y-m-d') . '.pdf');
@@ -385,21 +403,22 @@ class ReportController extends Controller
 
                 // Headers
                 $headers = ['ID', 'Customer', 'Medicine', 'Quantity', 'Unit Price', 'Total Amount', 'Status', 'Date'];
-                foreach ($headers as $col => $header) {
-                    $sheet->setCellValueByColumnAndRow($col + 1, 8, $header);
+                foreach ($headers as $index => $header) {
+                    $column = chr(65 + $index); // Convert number to letter (1 = A, 2 = B, etc.)
+                    $sheet->setCellValue($column . '8', $header);
                 }
 
                 // Data
                 $row = 9;
                 foreach ($salesData as $sale) {
-                    $sheet->setCellValueByColumnAndRow(1, $row, $sale['id']);
-                    $sheet->setCellValueByColumnAndRow(2, $row, $sale['user']);
-                    $sheet->setCellValueByColumnAndRow(3, $row, $sale['medicine_name']);
-                    $sheet->setCellValueByColumnAndRow(4, $row, $sale['quantity']);
-                    $sheet->setCellValueByColumnAndRow(5, $row, '₱' . number_format($sale['price'], 2));
-                    $sheet->setCellValueByColumnAndRow(6, $row, '₱' . number_format($sale['total_amount'], 2));
-                    $sheet->setCellValueByColumnAndRow(7, $row, $sale['payment_status']);
-                    $sheet->setCellValueByColumnAndRow(8, $row, $sale['created_at']);
+                    $sheet->setCellValue('A' . $row, $sale['id']);
+                    $sheet->setCellValue('B' . $row, $sale['user']);
+                    $sheet->setCellValue('C' . $row, $sale['medicine']['name']);
+                    $sheet->setCellValue('D' . $row, $sale['medicine']['quantity']);
+                    $sheet->setCellValue('E' . $row, '₱' . number_format($sale['medicine']['price'], 2));
+                    $sheet->setCellValue('F' . $row, '₱' . number_format($sale['medicine']['subtotal'], 2));
+                    $sheet->setCellValue('G' . $row, $sale['payment_status']);
+                    $sheet->setCellValue('H' . $row, $sale['created_at']);
                     $row++;
                 }
 
@@ -420,12 +439,6 @@ class ReportController extends Controller
                 // Save to temporary file
                 $writer = new Xlsx($spreadsheet);
                 $fileName = 'sales_report_' . now()->format('Y-m-d') . '.xlsx';
-                $tempPath = storage_path('app/temp');
-                
-                if (!file_exists($tempPath)) {
-                    mkdir($tempPath, 0755, true);
-                }
-                
                 $filePath = $tempPath . '/' . $fileName;
                 $writer->save($filePath);
 
@@ -435,12 +448,15 @@ class ReportController extends Controller
                 ])->deleteFileAfterSend(true);
             }
         } catch (\Exception $e) {
-            Log::error('Error generating sales report: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Error generating sales report', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
             
-            // Return error response in JSON format
             return response()->json([
-                'error' => 'Error generating report: ' . $e->getMessage()
+                'error' => 'Error generating report: ' . $e->getMessage(),
+                'details' => app()->environment('local') ? $e->getTraceAsString() : null
             ], 500);
         }
     }
@@ -458,6 +474,12 @@ class ReportController extends Controller
             $startDate = Carbon::parse($validated['start_date'])->startOfDay();
             $endDate = Carbon::parse($validated['end_date'])->endOfDay();
             $format = $validated['format'];
+
+            // Create temp directory if it doesn't exist
+            $tempPath = storage_path('app/temp');
+            if (!Storage::exists('temp')) {
+                Storage::makeDirectory('temp', 0755, true);
+            }
 
             // Get payment data
             $paymentData = Purchase::whereBetween('created_at', [$startDate, $endDate])
@@ -534,25 +556,28 @@ class ReportController extends Controller
                 $sheet->setCellValue('A5', 'Total Transactions:');
                 $sheet->setCellValue('B5', number_format($summary['total_transactions']));
                 $sheet->setCellValue('C5', 'Total Amount:');
-                $sheet->setCellValue('D5', number_format($summary['total_amount'], 2));
+                $sheet->setCellValue('D5', '₱' . number_format($summary['total_amount'], 2));
                 $sheet->setCellValue('A6', 'Average Transaction:');
-                $sheet->setCellValue('B6', number_format($summary['average_transaction'], 2));
+                $sheet->setCellValue('B6', '₱' . number_format($summary['average_transaction'], 2));
 
                 // Payment Status Breakdown
                 $sheet->setCellValue('A8', 'Payment Status Breakdown');
                 $sheet->mergeCells('A8:D8');
                 
+                // Headers
                 $headers = ['Status', 'Count', 'Total Amount', 'Average Amount'];
-                foreach ($headers as $col => $header) {
-                    $sheet->setCellValueByColumnAndRow($col + 1, 9, $header);
+                foreach ($headers as $index => $header) {
+                    $column = chr(65 + $index); // Convert number to letter (1 = A, 2 = B, etc.)
+                    $sheet->setCellValue($column . '9', $header);
                 }
 
+                // Payment Status Data
                 $row = 10;
                 foreach ($paymentData as $data) {
-                    $sheet->setCellValueByColumnAndRow(1, $row, $data['status']);
-                    $sheet->setCellValueByColumnAndRow(2, $row, number_format($data['count']));
-                    $sheet->setCellValueByColumnAndRow(3, $row, number_format($data['total_amount'], 2));
-                    $sheet->setCellValueByColumnAndRow(4, $row, number_format($data['average_amount'], 2));
+                    $sheet->setCellValue('A' . $row, $data['status']);
+                    $sheet->setCellValue('B' . $row, number_format($data['count']));
+                    $sheet->setCellValue('C' . $row, '₱' . number_format($data['total_amount'], 2));
+                    $sheet->setCellValue('D' . $row, '₱' . number_format($data['average_amount'], 2));
                     $row++;
                 }
 
@@ -562,17 +587,20 @@ class ReportController extends Controller
                 $sheet->mergeCells("A{$row}:D{$row}");
                 $row++;
 
+                // Trend Headers
                 $trendHeaders = ['Date', 'Status', 'Count', 'Total Amount'];
-                foreach ($trendHeaders as $col => $header) {
-                    $sheet->setCellValueByColumnAndRow($col + 1, $row, $header);
+                foreach ($trendHeaders as $index => $header) {
+                    $column = chr(65 + $index);
+                    $sheet->setCellValue($column . $row, $header);
                 }
                 $row++;
 
+                // Trend Data
                 foreach ($paymentTrends as $trend) {
-                    $sheet->setCellValueByColumnAndRow(1, $row, $trend['date']);
-                    $sheet->setCellValueByColumnAndRow(2, $row, $trend['status']);
-                    $sheet->setCellValueByColumnAndRow(3, $row, number_format($trend['count']));
-                    $sheet->setCellValueByColumnAndRow(4, $row, number_format($trend['total_amount'], 2));
+                    $sheet->setCellValue('A' . $row, $trend['date']);
+                    $sheet->setCellValue('B' . $row, $trend['status']);
+                    $sheet->setCellValue('C' . $row, number_format($trend['count']));
+                    $sheet->setCellValue('D' . $row, '₱' . number_format($trend['total_amount'], 2));
                     $row++;
                 }
 
@@ -594,23 +622,25 @@ class ReportController extends Controller
                 // Save to temporary file
                 $writer = new Xlsx($spreadsheet);
                 $fileName = 'payment_report_' . now()->format('Y-m-d') . '.xlsx';
-                $tempPath = storage_path('app/temp');
-                
-                if (!file_exists($tempPath)) {
-                    mkdir($tempPath, 0755, true);
-                }
-                
                 $filePath = $tempPath . '/' . $fileName;
                 $writer->save($filePath);
 
                 return response()->download($filePath, $fileName, [
                     'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'Content-Disposition' => 'attachment; filename="' . $fileName . '"'
                 ])->deleteFileAfterSend(true);
             }
         } catch (\Exception $e) {
-            Log::error('Error generating payment report: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            return response()->json(['error' => 'Error generating report: ' . $e->getMessage()], 500);
+            Log::error('Error generating payment report', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+            
+            return response()->json([
+                'error' => 'Error generating report: ' . $e->getMessage(),
+                'details' => app()->environment('local') ? $e->getTraceAsString() : null
+            ], 500);
         }
     }
 

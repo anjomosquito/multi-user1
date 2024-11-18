@@ -13,14 +13,16 @@ return new class extends Migration
     {
         Schema::create('medicines', function (Blueprint $table) {
             $table->id();
-            $table->String("name");
-            //$table->String("price");
-            $table->String("lprice");
-            $table->String("mprice");
-            $table->String("hprice");
-            $table->String("quantity");
-            $table->String("dosage");
-            $table->String("expdate");
+            $table->string('name');
+            $table->decimal('lprice', 10, 2);
+            $table->decimal('mprice', 10, 2);
+            $table->decimal('hprice', 10, 2);
+            $table->integer('quantity');
+            $table->string('dosage');
+            $table->date('expdate');
+            $table->string('status')->default('active');
+            $table->string('status_reason')->nullable();
+            $table->foreignId('category_id')->nullable()->constrained('medicine_categories')->nullOnDelete();
             $table->timestamps();
         });
     }

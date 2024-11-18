@@ -63,6 +63,13 @@ const showingNavigationDropdown = ref(false);
                                     Inventory
                                 </NavLink>
 
+                                <NavLink :href="route('admin.categories.index')"
+                                    :active="route().current('admin.categories.index')">
+                                    <i class="fas fa-list-alt text-blue-500"
+                                        style="font-size: 25px; width: 30px; height: 30px"></i>
+                                    Categories
+                                </NavLink>
+
                                 <NavLink :href="route('admin.chat.index')"
                                     :active="route().current('admin.chat.index')">
                                     <i class="fas fa-comments text-orange-500"

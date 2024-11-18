@@ -11,7 +11,18 @@ class Medicine extends Model
 {
     use HasFactory, LogsActivity;
 
-    protected $fillable = ['name', 'lprice', 'mprice', 'hprice', 'quantity', 'dosage', 'expdate'];
+    protected $fillable = [
+        'name',
+        'lprice',
+        'mprice',
+        'hprice',
+        'quantity',
+        'dosage',
+        'expdate',
+        'status',
+        'status_reason',
+        'category_id'
+    ];
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -26,5 +37,10 @@ class Medicine extends Model
     {
         return $query->where('name', 'LIKE', "%{$term}%")
                     ->orWhere('dosage', 'LIKE', "%{$term}%");
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(MedicineCategory::class);
     }
 }
