@@ -45,13 +45,25 @@
         .sales-list {
             margin-top: 20px;
         }
+        .purchase-table {
+            margin-left: 20px;
+            width: 95%;
+        }
+        .transaction-header {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Sales Report</h1>
+        <h1>@if($single_purchase) Purchase Details @else Sales Report @endif</h1>
         <div class="date-range">
-            Period: {{ $start_date }} to {{ $end_date }}
+            @if($single_purchase)
+                Date: {{ $start_date }}
+            @else
+                Period: {{ $start_date }} to {{ $end_date }}
+            @endif
         </div>
     </div>
 
@@ -67,42 +79,47 @@
             <tr>
                 <td><strong>Average Order Value:</strong></td>
                 <td class="amount">₱{{ number_format($summary['average_order_value'], 2) }}</td>
-                <td><strong>Total Items:</strong></td>
-                <td>{{ $summary['total_items'] }}</td>
+                <td></td>
+                <td></td>
             </tr>
         </table>
     </div>
 
     <div class="section sales-list">
-        <h2>Sales Details</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Customer</th>
-                    <th>Medicine</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Total Amount</th>
-                    <th>Status</th>
-                    <th>Date</th>
+        <h2>@if($single_purchase) Order Details @else Sales Details @endif</h2>
+        @foreach($sales_data as $sale)
+            <table>
+                <tr class="transaction-header">
+                    <td colspan="2">Order ID: {{ $sale['id'] }}</td>
+                    <td colspan="2">Customer: {{ $sale['user'] }}</td>
+                    <td colspan="2">Date: {{ $sale['created_at'] }}</td>
+                    <td colspan="2">Status: {{ $sale['payment_status'] }}</td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach($sales_data as $sale)
+            </table>
+            <table class="purchase-table">
+                <thead>
                     <tr>
-                        <td>{{ $sale['id'] }}</td>
-                        <td>{{ $sale['user'] }}</td>
-                        <td>{{ $sale['medicine_name'] }}</td>
-                        <td>{{ $sale['quantity'] }}</td>
-                        <td class="amount">₱{{ number_format($sale['price'], 2) }}</td>
-                        <td class="amount">₱{{ number_format($sale['total_amount'], 2) }}</td>
-                        <td>{{ $sale['payment_status'] }}</td>
-                        <td>{{ $sale['created_at'] }}</td>
+                        <th>Medicine</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Subtotal</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ $sale['medicine']['name'] }}</td>
+                        <td>{{ $sale['medicine']['quantity'] }}</td>
+                        <td class="amount">₱{{ number_format($sale['medicine']['price'], 2) }}</td>
+                        <td class="amount">₱{{ number_format($sale['medicine']['subtotal'], 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="amount"><strong>Total Amount:</strong></td>
+                        <td class="amount"><strong>₱{{ number_format($sale['total_amount'], 2) }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            <br>
+        @endforeach
     </div>
 </body>
 </html>

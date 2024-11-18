@@ -82,6 +82,34 @@ class AdminPurchaseController extends Controller
         ]);
     }
 
+    public function show($id)
+    {
+        $purchase = Purchase::with('user')->findOrFail($id);
+        
+        return Inertia::render('Admin/Purchase/Show', [
+            'purchase' => [
+                'id' => $purchase->id,
+                'user' => $purchase->user,
+                'name' => $purchase->name,
+                'quantity' => $purchase->quantity,
+                'total_amount' => $purchase->mprice * $purchase->quantity,
+                'status' => $purchase->status ?? 'pending',
+                'created_at' => $purchase->created_at,
+                'updated_at' => $purchase->updated_at,
+                'dosage' => $purchase->dosage,
+                'pickup_ready_at' => $purchase->pickup_ready_at,
+                'pickup_deadline' => $purchase->pickup_deadline,
+                'admin_pickup_verified' => $purchase->admin_pickup_verified,
+                'user_pickup_verified' => $purchase->user_pickup_verified,
+                'verification_status' => $this->getVerificationStatus($purchase),
+                'payment_proof' => $purchase->payment_proof,
+                'payment_proof_url' => $purchase->payment_proof_url,
+                'payment_status' => $purchase->payment_status,
+                'payment_verified_at' => $purchase->payment_verified_at,
+            ]
+        ]);
+    }
+
     public function confirm($id)
     {
         try {

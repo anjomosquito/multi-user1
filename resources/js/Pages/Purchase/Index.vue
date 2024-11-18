@@ -135,6 +135,12 @@
                   class="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm">
                   Verify Pickup
                 </button>
+
+                <!-- View Receipt button -->
+                <button v-if="purchase.status === 'completed'" @click="viewReceipt(purchase)"
+                  class="w-full text-green-600 hover:text-green-900 bg-green-100 px-3 py-1 rounded-full">
+                  View Receipt
+                </button>
               </td>
             </tr>
           </tbody>
@@ -166,6 +172,16 @@
           </div>
         </div>
       </teleport>
+
+      <!-- Receipt Modal -->
+      <teleport to="body">
+        <ReceiptModal 
+          v-if="showReceiptModal"
+          :show="showReceiptModal"
+          :receipt-url="receiptUrl"
+          @close="showReceiptModal = false"
+        />
+      </teleport>
     </div>
   </AuthenticatedLayout>
 </template>
@@ -175,12 +191,15 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import { ref } from 'vue';
+import ReceiptModal from '@/Components/ReceiptModal.vue';
 
 const props = defineProps({
   purchases: Array
 });
 
 const selectedReport = ref(null);
+const showReceiptModal = ref(false);
+const receiptUrl = ref('');
 
 function viewReport(purchase) {
   selectedReport.value = purchase;
@@ -306,4 +325,9 @@ const handleFileUpload = async (file, purchaseId) => {
     });
   }
 };
+
+function viewReceipt(purchase) {
+  receiptUrl.value = route('purchase.receipt', { purchase_id: purchase.id });
+  showReceiptModal.value = true;
+}
 </script>

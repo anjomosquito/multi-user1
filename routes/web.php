@@ -49,6 +49,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::post('/reports/sales', [ReportController::class, 'generateSalesReport'])->name('reports.sales');
+    Route::get('/reports/sales/print', [ReportController::class, 'printSalesReport'])->name('reports.sales.print');
+    Route::get('/purchase/receipt', [ReportController::class, 'viewReceipt'])->name('purchase.receipt');
     Route::post('/reports/payment', [ReportController::class, 'generatePaymentReport'])->name('reports.payment');
     Route::post('/reports/sales/download', [ReportController::class, 'downloadSalesReport'])->name('reports.sales.download');
     Route::post('/reports/payment/download', [ReportController::class, 'downloadPaymentReport'])->name('reports.payment.download');
@@ -83,7 +85,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/users', [UserController::class, 'index'])->name('users.index');
         
         // Purchase Routes
-        Route::get('/purchase', [AdminPurchaseController::class, 'index'])->name('purchase.index');
+        Route::get('/purchase/index', [AdminPurchaseController::class, 'index'])->name('purchase.index');
+        Route::get('/purchase/{id}', [AdminPurchaseController::class, 'show'])->name('purchase.show');
         Route::post('/purchase/{id}/mark-ready', [AdminPurchaseController::class, 'markAsReady'])->name('purchase.mark-ready');
     });
 });
@@ -129,9 +132,13 @@ Route::delete('/purchase/cancel/{id}', [PurchaseController::class, 'cancel'])->n
 //Purchase ADMIN
 Route::get('admin/purchase/index', [AdminPurchaseController::class, 'index'])->name('admin.purchase.index');
 Route::get('/admin/purchase/report', [AdminPurchaseController::class, 'generateReport'])->name('admin.purchase.report');
+Route::get('/admin/purchase/{id}', [AdminPurchaseController::class, 'show'])->name('admin.purchase.show');
 
 //ADMIN DASHBOARD
-Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+Route::middleware(['auth:admin', 'verified'])->group(function () {
+    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/dashboard/search', [DashboardController::class, 'search'])->name('admin.dashboard.search');
+});
 
 Route::middleware(['auth:admin'])->group(function () {
     Route::post('/admin/purchase/{id}/confirm', [AdminPurchaseController::class, 'confirm'])
@@ -142,6 +149,12 @@ Route::middleware(['auth:admin'])->group(function () {
         ->name('admin.purchase.complete');
     Route::post('/admin/purchase/{id}/verify-pickup', [AdminPurchaseController::class, 'markAsPickedUp'])
         ->name('admin.purchase.verify-pickup');
+    // Admin Dashboard Search
+    Route::get('/admin/search', [App\Http\Controllers\Admin\DashboardController::class, 'search'])->name('admin.search');
+    
+    // Admin Inventory Actions
+    Route::post('/admin/inventory/restock', [App\Http\Controllers\Admin\InventoryController::class, 'restock'])->name('admin.inventory.restock');
+    Route::post('/admin/inventory/discount', [App\Http\Controllers\Admin\InventoryController::class, 'discount'])->name('admin.inventory.discount');
 });
 
 require __DIR__.'/auth.php';

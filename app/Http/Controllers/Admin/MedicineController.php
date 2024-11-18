@@ -72,6 +72,17 @@ class MedicineController extends Controller
     }
 
     /**
+     * Display the specified resource.
+     *
+     * @param  \App\Models\Medicine  $medicine
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function show(Medicine $medicine)
+    {
+        return to_route('admin.medicines.index');
+    }
+
+    /**
      * Show the form for editing the specified resource.
      *
      * @param  \App\Models\Medicine  $medicine

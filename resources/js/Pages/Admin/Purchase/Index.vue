@@ -71,9 +71,9 @@
                   {{ formatStatus(purchase.status) }}
                 </span>
                 <div v-if="purchase.status === 'rejected' || purchase.status === 'completed'" class="mt-2">
-                  <button @click="viewReport(purchase)"
-                    class="px-2 py-1 bg-green-200 hover:bg-green-300 text-gray-800 rounded text-xs font-medium">
-                    View Report
+                  <button @click="viewReceipt(purchase)"
+                    class="w-full text-green-600 hover:text-green-900 bg-green-100 px-3 py-1 rounded-full">
+                    View Receipt
                   </button>
 
                 </div>
@@ -181,6 +181,12 @@
         @close="showReportModal = false"
         @success="handleReportSuccess"
       />
+      <ReceiptModal 
+        v-if="showReceiptModal"
+        :show="showReceiptModal"
+        :receipt-url="receiptUrl"
+        @close="showReceiptModal = false"
+      />
     </div>
   </AdminAuthenticatedLayout>
 </template>
@@ -189,23 +195,30 @@
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AdminAuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
-import ReportModal from '@/Components/ReportModal.vue';
-import Swal from 'sweetalert2';
 import { Head } from '@inertiajs/vue3';
+import ReportModal from '@/Components/ReportModal.vue';
+import ReceiptModal from '@/Components/ReceiptModal.vue';
+import Swal from 'sweetalert2';
 import axios from 'axios';
 
 const props = defineProps({
   purchases: {
     type: Array,
-    required: true
+    default: () => []
   }
 });
+
 const showReportModal = ref(false);
+const showReceiptModal = ref(false);
+const receiptUrl = ref('');
 const selectedReport = ref(null);
 const loadingStates = ref(new Set());
 
-function viewReport(purchase) {
-  selectedReport.value = purchase;
+function viewReceipt(purchase) {
+  receiptUrl.value = route('purchase.receipt', { 
+    purchase_id: purchase.id 
+  });
+  showReceiptModal.value = true;
 }
 
 function closeModal() {
@@ -402,7 +415,7 @@ function verifyPayment(purchaseId, status) {
 }
 
 .status-verified {
-  @apply bg-purple-100 text-purple-800;
+  @apply bg-blue-100 text-blue-800;
 }
 
 .status-completed {

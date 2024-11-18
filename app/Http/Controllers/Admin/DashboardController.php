@@ -5,29 +5,51 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Medicine;
 use App\Models\Purchase;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Spatie\Activitylog\Models\Activity;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // Get counts and analytics
-        $medicineCount = Medicine::count();
-        $purchaseCount = Purchase::count();
-        
-        // Get low stock medicines with details
-        $lowStockMedicines = Medicine::where('quantity', '<=', 10)
-            ->select('id', 'name', 'quantity', 'dosage')
-            ->get();
-        $lowStockCount = $lowStockMedicines->count();
-        
-        // Calculate total revenue
-        $totalRevenue = Purchase::where('status', 'completed')
-            ->selectRaw('SUM(mprice * quantity) as total_revenue')
-            ->value('total_revenue') ?? 0;
+        $totalMedicines = Medicine::count();
+        $totalPurchases = Purchase::count();
+        $totalUsers = User::count();
+        $lowStockCount = Medicine::where('quantity', '<', 10)->count();
 
-        // Get recent purchases with user details
+        // Get expiring medicines (within next 30 days)
+        $expiringMedicines = Medicine::whereDate('expdate', '<=', Carbon::now()->addDays(30))
+            ->orderBy('expdate')
+            ->take(5)
+            ->get();
+
+        // Get recent activity logs
+        $recentActivity = Activity::with('causer')
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function ($activity) {
+                return [
+                    'id' => $activity->id,
+                    'description' => $activity->description,
+                    'causer_name' => $activity->causer ? $activity->causer->name : 'System',
+                    'created_at' => $activity->created_at,
+                    'properties' => $activity->properties,
+                ];
+            });
+
+        // Get revenue data for chart (using mprice as the default price)
+        $revenueData = Purchase::selectRaw('DATE(created_at) as date, SUM(mprice * quantity) as total')
+            ->where('created_at', '>=', Carbon::now()->subDays(7))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // Get recent purchases with total amount
         $recentPurchases = Purchase::with('user')
             ->latest()
             ->take(5)
@@ -35,62 +57,83 @@ class DashboardController extends Controller
             ->map(function ($purchase) {
                 return [
                     'id' => $purchase->id,
-                    'user' => $purchase->user ? [
-                        'id' => $purchase->user->id,
-                        'name' => $purchase->user->name,
-                    ] : null,
+                    'user' => $purchase->user,
                     'name' => $purchase->name,
                     'created_at' => $purchase->created_at,
-                    'total_amount' => $purchase->mprice * $purchase->quantity,
-                    'status' => $purchase->status ?? 'pending'
-                ];
-            });
-
-        // Get medicines expiring within 3 months with more details
-        $expiringMedicines = Medicine::whereDate('expdate', '<=', now()->addMonths(3))
-            ->orderBy('expdate')
-            ->get()
-            ->map(function ($medicine) {
-                $expiryDate = \Carbon\Carbon::parse($medicine->expdate);
-                $now = \Carbon\Carbon::now();
-                $daysUntilExpiry = $now->diffInDays($expiryDate, false);
-                
-                // Get a more detailed time description
-                $timeUntilExpiry = '';
-                if ($daysUntilExpiry < 0) {
-                    $timeUntilExpiry = 'Expired ' . abs($daysUntilExpiry) . ' days ago';
-                } elseif ($daysUntilExpiry === 0) {
-                    $timeUntilExpiry = 'Expires today';
-                } elseif ($daysUntilExpiry === 1) {
-                    $timeUntilExpiry = 'Expires tomorrow';
-                } elseif ($daysUntilExpiry <= 30) {
-                    $timeUntilExpiry = $daysUntilExpiry . ' days left';
-                } else {
-                    $months = ceil($daysUntilExpiry / 30);
-                    $timeUntilExpiry = $months . ' month' . ($months > 1 ? 's' : '') . ' left';
-                }
-
-                return [
-                    'id' => $medicine->id,
-                    'name' => $medicine->name,
-                    'expdate' => $medicine->expdate,
-                    'quantity' => $medicine->quantity,
-                    'dosage' => $medicine->dosage,
-                    'days_until_expiry' => $daysUntilExpiry,
-                    'time_until_expiry' => $timeUntilExpiry,
-                    'status' => $daysUntilExpiry <= 30 ? 'critical' : 'warning',
-                    'is_expired' => $daysUntilExpiry < 0
+                    'status' => $purchase->status ?? 'pending',
+                    'total_amount' => $purchase->mprice * $purchase->quantity
                 ];
             });
 
         return Inertia::render('Admin/Dashboard', [
-            'medicineCount' => $medicineCount,
-            'purchaseCount' => $purchaseCount,
+            'totalMedicines' => $totalMedicines,
+            'totalPurchases' => $totalPurchases,
+            'totalUsers' => $totalUsers,
             'lowStockCount' => $lowStockCount,
-            'lowStockMedicines' => $lowStockMedicines,
-            'totalRevenue' => $totalRevenue,
+            'expiringMedicines' => $expiringMedicines,
+            'recentActivity' => $recentActivity,
+            'revenueData' => $revenueData,
             'recentPurchases' => $recentPurchases,
-            'expiringMedicines' => $expiringMedicines
+        ]);
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->input('query');
+        
+        $medicines = Medicine::where('name', 'LIKE', "%{$query}%")
+            ->orWhere('dosage', 'LIKE', "%{$query}%")
+            ->take(5)
+            ->get()
+            ->map(function ($medicine) {
+                return [
+                    'id' => $medicine->id,
+                    'name' => $medicine->name,
+                    'quantity' => $medicine->quantity,
+                    'dosage' => $medicine->dosage,
+                    'type' => 'medicine'
+                ];
+            });
+
+        $purchases = Purchase::with('user')
+            ->where('name', 'LIKE', "%{$query}%")
+            ->orWhereHas('user', function($q) use ($query) {
+                $q->where('name', 'LIKE', "%{$query}%");
+            })
+            ->take(5)
+            ->get()
+            ->map(function ($purchase) {
+                return [
+                    'id' => $purchase->id,
+                    'name' => $purchase->name,
+                    'user' => $purchase->user ? $purchase->user->name : 'N/A',
+                    'created_at' => $purchase->created_at->format('Y-m-d'),
+                    'type' => 'purchase'
+                ];
+            });
+
+        $users = User::where('name', 'LIKE', "%{$query}%")
+            ->orWhere('email', 'LIKE', "%{$query}%")
+            ->take(5)
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'type' => 'user'
+                ];
+            });
+
+        return Inertia::render('Admin/Dashboard', [
+            'searchResults' => [
+                'medicines' => $medicines,
+                'purchases' => $purchases,
+                'users' => $users,
+            ],
+            'filters' => [
+                'query' => $query
+            ]
         ]);
     }
 }

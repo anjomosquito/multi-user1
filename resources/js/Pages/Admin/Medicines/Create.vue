@@ -7,7 +7,7 @@
     <div class="py-12">
       <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="flex justify-end m-2 p-2">
-          <Link href="/admin/medicines/index" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded">Back</Link>
+          <Link :href="route('admin.medicines.index')" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded">Back</Link>
         </div>
 
         <div class="flex justify-center">
@@ -83,4 +83,3 @@ function storeMedicine() {
   form.post('/admin/medicines/');
 }
 </script>
-  

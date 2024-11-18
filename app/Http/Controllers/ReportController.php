@@ -220,4 +220,82 @@ class ReportController extends Controller
             return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
         }
     }
+
+    public function printSalesReport(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $purchaseId = $request->input('purchase_id');
+
+        $query = Purchase::with(['user', 'medicine']);
+        
+        if ($purchaseId) {
+            $query->where('id', $purchaseId);
+        } else {
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        }
+
+        $salesData = $query->get()->map(function ($purchase) {
+            return [
+                'id' => $purchase->id,
+                'transaction_number' => $purchase->id, // Using ID as transaction number if not available
+                'user' => $purchase->user->name,
+                'total_amount' => $purchase->quantity * $purchase->mprice,
+                'payment_status' => $purchase->payment_status,
+                'created_at' => $purchase->created_at->format('Y-m-d H:i:s'),
+                'medicine' => [
+                    'name' => $purchase->medicine->name,
+                    'quantity' => $purchase->quantity,
+                    'price' => $purchase->mprice,
+                    'subtotal' => $purchase->quantity * $purchase->mprice
+                ]
+            ];
+        });
+
+        $summary = [
+            'total_sales' => $salesData->sum('total_amount'),
+            'total_orders' => $salesData->count(),
+            'average_order_value' => $salesData->count() > 0 ? $salesData->sum('total_amount') / $salesData->count() : 0,
+        ];
+
+        $pdf = PDF::loadView('reports.sales', [
+            'sales_data' => $salesData,
+            'summary' => $summary,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'single_purchase' => !empty($purchaseId)
+        ]);
+
+        return $pdf->stream('sales-report.pdf');
+    }
+
+    public function viewReceipt(Request $request)
+    {
+        $purchaseId = $request->input('purchase_id');
+        
+        $purchase = Purchase::with(['user', 'medicine'])
+            ->findOrFail($purchaseId);
+
+        $receiptData = [
+            'id' => $purchase->id,
+            'user' => $purchase->user->name,
+            'total_amount' => $purchase->quantity * $purchase->mprice,
+            'payment_status' => $purchase->payment_status,
+            'created_at' => $purchase->created_at->format('Y-m-d H:i:s'),
+            'medicine' => [
+                'name' => $purchase->medicine->name,
+                'quantity' => $purchase->quantity,
+                'price' => $purchase->mprice,
+                'subtotal' => $purchase->quantity * $purchase->mprice
+            ]
+        ];
+
+        $pdf = PDF::loadView('receipts.purchase', [
+            'receipt' => $receiptData,
+            'purchase_date' => $purchase->created_at->format('Y-m-d'),
+            'receipt_no' => sprintf('RCP-%06d', $purchase->id)
+        ]);
+
+        return $pdf->stream('receipt.pdf');
+    }
 }
