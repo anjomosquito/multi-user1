@@ -10,6 +10,8 @@ use App\Models\Medicine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class PurchaseController extends Controller
 {
@@ -191,5 +193,34 @@ class PurchaseController extends Controller
         ]);
 
         return back()->with('success', 'Payment proof uploaded successfully.');
+    }
+
+    public function generatePurchaseReport(Purchase $purchase)
+    {
+        // Ensure the user can only view their own purchase reports
+        if ($purchase->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        // Format the data for the report
+        $reportData = [
+            'transaction_number' => str_pad($purchase->id, 5, '0', STR_PAD_LEFT),
+            'date' => Carbon::parse($purchase->created_at)->format('M d, Y h:i A'),
+            'customer_name' => Auth::user()->name,
+            'medicine_name' => $purchase->name,
+            'dosage' => $purchase->dosage,
+            'quantity' => $purchase->quantity,
+            'unit_price' => number_format($purchase->mprice, 2),
+            'total_amount' => number_format($purchase->quantity * $purchase->mprice, 2),
+            'status' => $purchase->status,
+            'payment_status' => $purchase->payment_status,
+            'verification_date' => $purchase->payment_verified_at ? Carbon::parse($purchase->payment_verified_at)->format('M d, Y h:i A') : 'N/A'
+        ];
+
+        // Generate PDF
+        $pdf = PDF::loadView('reports.purchase-receipt', ['purchase' => $reportData]);
+        
+        // Return the PDF for download or viewing
+        return $pdf->stream("receipt-{$reportData['transaction_number']}.pdf");
     }
 }

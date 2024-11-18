@@ -207,6 +207,8 @@ Route::middleware(['auth'])->group(function () {
         ->name('purchase.verify-pickup');
     Route::post('/purchase/{id}/upload-payment', [PurchaseController::class, 'uploadPaymentProof'])
         ->name('purchase.upload-payment');
+    Route::get('/purchase/{purchase}/report', [PurchaseController::class, 'generatePurchaseReport'])
+        ->name('purchase.report');
 });
 
 // User chat routes
@@ -252,3 +254,7 @@ Route::get('/test-mail/{user_id}', function ($user_id) {
         return 'Error: ' . $e->getMessage();
     }
 });
+
+Route::get('/admin/purchase/{purchase}/report', [AdminPurchaseController::class, 'generatePurchaseReport'])
+    ->name('admin.purchase.report')
+    ->middleware(['auth', 'admin']);

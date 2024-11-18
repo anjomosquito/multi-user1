@@ -58,17 +58,32 @@ class MedicineController extends Controller
      */
     public function store(Request $request)
     {
-        Medicine::create([
-            'name' => $request->name,
-            'lprice' => $request->lprice,
-            'mprice' => $request->mprice,
-            'hprice' => $request->hprice,
-            'quantity' => $request->quantity,
-            'dosage' => $request->dosage,
-            'expdate' => $request->expdate,
-        ]);
+        // Check if medicine with same name exists
+        $existingMedicine = Medicine::where('name', $request->name)->first();
+        
+        if ($existingMedicine) {
+            // Medicine exists, update quantity
+            $existingMedicine->update([
+                'quantity' => $existingMedicine->quantity + $request->quantity
+            ]);
 
-        return redirect()->route('admin.medicines.index');
+            return redirect()->route('admin.medicines.index')
+                ->with('success', 'Medicine quantity updated successfully!');
+        } else {
+            // New medicine, create new record
+            Medicine::create([
+                'name' => $request->name,
+                'lprice' => $request->lprice,
+                'mprice' => $request->mprice,
+                'hprice' => $request->hprice,
+                'quantity' => $request->quantity,
+                'dosage' => $request->dosage,
+                'expdate' => $request->expdate,
+            ]);
+
+            return redirect()->route('admin.medicines.index')
+                ->with('success', 'New medicine added successfully!');
+        }
     }
 
     /**
