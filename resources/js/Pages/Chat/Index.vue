@@ -50,11 +50,10 @@
                         <!-- Message Input -->
                         <form v-if="showChatInput" @submit.prevent="sendMessage" class="flex gap-2">
                             <input v-model="form.message" type="text" name="message" placeholder="Type your message..."
-                                class="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
-                                @keyup.enter="sendMessage">
+                                class="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200">
                             <button type="submit"
                                 class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-                                :disabled="form.processing || !form.message.trim()">
+                                :disabled="form.processing || !form.message.trim() || isSubmitting">
                                 Send
                             </button>
                         </form>
@@ -85,6 +84,7 @@ const form = useForm({
 
 const chatContainer = ref(null);
 const showChatInput = ref(props.hasActiveChat);
+const isSubmitting = ref(false);
 
 const scrollToBottom = () => {
     if (chatContainer.value) {
@@ -103,8 +103,9 @@ const startNewChat = () => {
 };
 
 const sendMessage = () => {
-    if (!form.message.trim()) return;
+    if (!form.message.trim() || isSubmitting.value) return;
 
+    isSubmitting.value = true;
     form.post(route('chat.store'), {
         onSuccess: () => {
             form.reset();
@@ -112,6 +113,9 @@ const sendMessage = () => {
             nextTick(() => {
                 scrollToBottom();
             });
+        },
+        onFinish: () => {
+            isSubmitting.value = false;
         }
     });
 };

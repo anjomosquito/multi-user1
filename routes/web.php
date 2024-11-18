@@ -13,6 +13,7 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -42,10 +43,15 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::post('/reports/sales', [ReportController::class, 'generateSalesReport'])->name('reports.sales');
+    Route::post('/reports/payment', [ReportController::class, 'generatePaymentReport'])->name('reports.payment');
+    Route::post('/reports/sales/download', [ReportController::class, 'downloadSalesReport'])->name('reports.sales.download');
+    Route::post('/reports/payment/download', [ReportController::class, 'downloadPaymentReport'])->name('reports.payment.download');
 });
 
 Route::prefix('admin')->name('admin.')->group(function () {
@@ -53,70 +59,90 @@ Route::prefix('admin')->name('admin.')->group(function () {
         return Inertia::render('Admin/Dashboard');
     })->middleware(['auth:admin', 'verified:admin'])->name('dashboard');
 
-    
-
     Route::middleware('auth:admin')->group(function () {
         Route::get('/profile', [AdminProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [AdminProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [AdminProfileController::class, 'destroy'])->name('profile.destroy');
+        
+        // Admin Reports Routes
+        Route::get('/reports', [App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
+        Route::post('/reports/sales', [App\Http\Controllers\Admin\ReportController::class, 'generateSalesReport'])->name('reports.sales');
+        Route::post('/reports/payments', [App\Http\Controllers\Admin\ReportController::class, 'generatePaymentReport'])->name('reports.payments');
+        Route::post('/reports/sales/download', [App\Http\Controllers\Admin\ReportController::class, 'downloadSalesReport'])->name('reports.sales.download');
+        Route::post('/reports/payments/download', [App\Http\Controllers\Admin\ReportController::class, 'downloadPaymentReport'])->name('reports.payments.download');
+        Route::get('/reports/sales/print', [App\Http\Controllers\Admin\ReportController::class, 'printSalesReport'])->name('reports.sales.print');
+        Route::get('/reports/payments/print', [App\Http\Controllers\Admin\ReportController::class, 'printPaymentReport'])->name('reports.payments.print');
+        
+        // Medicine Routes
+        Route::resource('medicines', MedicineController::class);
+        
+        // Inventory Routes
+        Route::get('/inventory', [AdminInventoryController::class, 'index'])->name('inventory.index');
+        
+        // Users Routes
+        Route::get('/users', [UserController::class, 'index'])->name('users.index');
+        
+        // Purchase Routes
+        Route::get('/purchase', [AdminPurchaseController::class, 'index'])->name('purchase.index');
+        Route::post('/purchase/{id}/mark-ready', [AdminPurchaseController::class, 'markAsReady'])->name('purchase.mark-ready');
     });
-    Route::post('/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
-
 });
 
-    //Medicine
-    /*Route::get('/admin.medicines', function () {
+Route::post('/admin/logout', [AdminAuthenticatedSessionController::class, 'destroy'])->name('admin.logout');
+
+//Medicine
+/*Route::get('/admin.medicines', function () {
     return Inertia::render('Admin/Medicines/Index');
-    })->name('admin.medicines');*/
-    Route::get('/admin/medicines/index', [MedicineController::class, 'index'])->name('admin.medicines.index');
-    Route::post('/admin/medicines/', [MedicineController::class, 'store'])->name('admin.medicines.store');
-    Route::get('/admin/medicines/create', [MedicineController::class, 'create'])->name('admin.medicines.create');    
-    Route::put('/admin/medicines/{medicine}', [MedicineController::class, 'update'])->name('admin.medicines.update');
-    Route::get('/admin/medicines/{medicine}/edit', [MedicineController::class, 'edit'])->name('admin.medicines.edit');
-    Route::delete('/admin/medicines/{medicine}', [MedicineController::class, 'destroy'])->name('admin.medicines.destroy');
+})->name('admin.medicines');*/
+//Route::get('/admin/medicines/index', [MedicineController::class, 'index'])->name('admin.medicines.index');
+//Route::post('/admin/medicines/', [MedicineController::class, 'store'])->name('admin.medicines.store');
+//Route::get('/admin/medicines/create', [MedicineController::class, 'create'])->name('admin.medicines.create');    
+//Route::put('/admin/medicines/{medicine}', [MedicineController::class, 'update'])->name('admin.medicines.update');
+//Route::get('/admin/medicines/{medicine}/edit', [MedicineController::class, 'edit'])->name('admin.medicines.edit');
+//Route::delete('/admin/medicines/{medicine}', [MedicineController::class, 'destroy'])->name('admin.medicines.destroy');
     
-    //Inventory
-    Route::get('/admin/admininventory/index', [AdminInventoryController::class, 'index'])->name('admin.admininventory.index');
-    Route::get('/dashboard', [InventoryController::class, 'dashboard'])->name('dashboard');
-    //Message 
+//Inventory
+//Route::get('/admin/admininventory/index', [AdminInventoryController::class, 'index'])->name('admin.admininventory.index');
+Route::get('/dashboard', [InventoryController::class, 'dashboard'])->name('dashboard');
+//Message 
 
-    //UsersProfiles
-    Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
-
-
-    Route::get('/medicines', [InventoryController::class, 'index'])->name('medicines.index');
-    Route::post('/medicines/', [InventoryController::class, 'store'])->name('medicines.store');
+//UsersProfiles
+//Route::get('/admin/users', [UserController::class, 'index'])->name('admin.users.index');
 
 
-    //Cart
-    Route::middleware(['auth'])->group(function () {
-        Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
-        Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-        Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
-    });
+Route::get('/medicines', [InventoryController::class, 'index'])->name('medicines.index');
+Route::post('/medicines/', [InventoryController::class, 'store'])->name('medicines.store');
+
+
+//Cart
+Route::middleware(['auth'])->group(function () {
+    Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
+    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+    Route::delete('/cart/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
+});
     
-    //Purcahse
-    Route::get('/purchase/index', [PurchaseController::class, 'index'])->name('purchase.index');
-    Route::post('/purchase/order', [PurchaseController::class, 'store'])->name('purchase.store');
-    Route::delete('/purchase/cancel/{id}', [PurchaseController::class, 'cancel'])->name('purchase.cancel');
+//Purcahse
+Route::get('/purchase/index', [PurchaseController::class, 'index'])->name('purchase.index');
+Route::post('/purchase/order', [PurchaseController::class, 'store'])->name('purchase.store');
+Route::delete('/purchase/cancel/{id}', [PurchaseController::class, 'cancel'])->name('purchase.cancel');
 
-    //Purchase ADMIN
-    Route::get('admin/purchase/index', [AdminPurchaseController::class, 'index'])->name('admin.purchase.index');
-    Route::get('/admin/purchase/report', [AdminPurchaseController::class, 'generateReport'])->name('admin.purchase.report');
+//Purchase ADMIN
+Route::get('admin/purchase/index', [AdminPurchaseController::class, 'index'])->name('admin.purchase.index');
+Route::get('/admin/purchase/report', [AdminPurchaseController::class, 'generateReport'])->name('admin.purchase.report');
 
-    //ADMIN DASHBOARD
-    Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+//ADMIN DASHBOARD
+Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-    Route::middleware(['auth:admin'])->group(function () {
-        Route::post('/admin/purchase/{id}/confirm', [AdminPurchaseController::class, 'confirm'])
-            ->name('admin.purchase.confirm');
-        Route::post('/admin/purchase/{id}/ready', [AdminPurchaseController::class, 'markAsReady'])
-            ->name('admin.purchase.ready');
-        Route::post('/admin/purchase/{id}/complete', [AdminPurchaseController::class, 'markAsCompleted'])
-            ->name('admin.purchase.complete');
-        Route::post('/admin/purchase/{id}/verify-pickup', [AdminPurchaseController::class, 'markAsPickedUp'])
-            ->name('admin.purchase.verify-pickup');
-    });
+Route::middleware(['auth:admin'])->group(function () {
+    Route::post('/admin/purchase/{id}/confirm', [AdminPurchaseController::class, 'confirm'])
+        ->name('admin.purchase.confirm');
+    Route::post('/admin/purchase/{id}/ready', [AdminPurchaseController::class, 'markAsReady'])
+        ->name('admin.purchase.ready');
+    Route::post('/admin/purchase/{id}/complete', [AdminPurchaseController::class, 'markAsCompleted'])
+        ->name('admin.purchase.complete');
+    Route::post('/admin/purchase/{id}/verify-pickup', [AdminPurchaseController::class, 'markAsPickedUp'])
+        ->name('admin.purchase.verify-pickup');
+});
 
 require __DIR__.'/auth.php';
 
@@ -142,6 +168,17 @@ Route::middleware(['auth:admin'])->prefix('admin')->name('admin.')->group(functi
         Route::post('{id}/verify-pickup', [AdminPurchaseController::class, 'verifyPickup'])
             ->name('verify-pickup')
             ->where('id', '[0-9]+');
+    });
+
+    // Admin Reports routes
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\ReportController::class, 'index'])->name('index');
+        Route::post('/sales', [App\Http\Controllers\Admin\ReportController::class, 'generateSalesReport'])->name('sales');
+        Route::post('/payments', [App\Http\Controllers\Admin\ReportController::class, 'generatePaymentReport'])->name('payments');
+        Route::post('/sales/download', [App\Http\Controllers\Admin\ReportController::class, 'downloadSalesReport'])->name('sales.download');
+        Route::post('/payment/download', [App\Http\Controllers\Admin\ReportController::class, 'downloadPaymentReport'])->name('payment.download');
+        Route::get('/sales/print', [App\Http\Controllers\Admin\ReportController::class, 'printSalesReport'])->name('sales.print');
+        Route::get('/payments/print', [App\Http\Controllers\Admin\ReportController::class, 'printPaymentReport'])->name('payments.print');
     });
 });
 

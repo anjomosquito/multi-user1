@@ -1,8 +1,6 @@
 <template>
   <AuthenticatedLayout>
-
     <Head title="Purchase History" />
-
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-12">
       <h2 class="text-2xl font-semibold mb-6 text-center">Purchase History</h2>
 
@@ -12,7 +10,8 @@
         {{ $page.props.flash.success }}
       </div>
 
-      <div v-if="$page.props.flash.error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+      <div v-if="$page.props.flash.error" 
+        class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
         {{ $page.props.flash.error }}
       </div>
 
@@ -56,18 +55,11 @@
                   'px-2 py-1 rounded text-xs font-medium': true,
                   'bg-yellow-100 text-yellow-800': purchase.status === 'pending',
                   'bg-blue-100 text-blue-800': purchase.status === 'confirmed',
-                  'bg-green-400 text-black-800 hover:bg-green-300': purchase.status === 'completed',
+                  'bg-green-400 text-black-800': purchase.status === 'completed',
                   'bg-red-100 text-red-800': purchase.status === 'cancelled'
                 }">
                   {{ formatStatus(purchase.status) }}
                 </span>
-                <div v-if="purchase.status === 'rejected' || purchase.status === 'completed'" class="mt-2">
-                  <button @click="viewReport(purchase)"
-                    class="px-2 py-1 bg-green-200 hover:bg-green-300 text-gray-800 rounded text-xs font-medium">
-                    View Report
-                  </button>
-
-                </div>
               </td>
               <td class="px-6 py-4">
                 <div v-if="purchase.user_pickup_verified && purchase.admin_pickup_verified"
@@ -96,76 +88,84 @@
               </td>
               <td class="px-6 py-4">{{ new Date(purchase.created_at).toLocaleDateString() }}</td>
               <td class="px-6 py-4 space-y-2">
-                <!-- Cancel button for pending purchases -->
+                <!-- Cancel button -->
                 <button v-if="purchase.status === 'pending'" @click="confirmCancel(purchase)"
                   class="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm">
                   Cancel
                 </button>
 
+                <!-- Payment Status Messages -->
+                <div v-if="purchase.payment_status === 'rejected'" class="text-sm text-red-600 mb-2">
+                  Payment proof was rejected. Please upload a new one.
+                </div>
+                <div v-if="purchase.payment_status === 'pending'" class="text-sm text-amber-600 mb-2">
+                  Payment proof is pending verification.
+                </div>
+
+                <!-- Payment Proof Upload -->
+                <div v-if="(purchase.status === 'confirmed' || purchase.status === 'ready_for_pickup') && 
+                         (purchase.payment_status !== 'verified' && 
+                         (purchase.payment_status === 'pending' || purchase.payment_status === 'rejected' || !purchase.payment_status))"
+                     class="space-y-2">
+                  <input
+                    type="file"
+                    :ref="'fileInput' + purchase.id"
+                    @change="(e) => handleFileUpload(e.target.files[0], purchase.id)"
+                    accept="image/*,.pdf"
+                    class="hidden"
+                  />
+                  <button
+                    @click="$refs['fileInput' + purchase.id][0].click()"
+                    class="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 
+                           rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    {{ purchase.payment_status === 'rejected' ? 'Upload New Payment Proof' : 'Upload Payment Proof' }}
+                  </button>
+                  <div v-if="purchase.payment_proof_url" class="text-sm text-gray-500">
+                    Previous proof: 
+                    <a :href="purchase.payment_proof_url" target="_blank" class="text-indigo-600 hover:text-indigo-800">
+                      View
+                    </a>
+                  </div>
+                </div>
+
                 <!-- Verify Pickup button -->
-                <button v-if="purchase.ready_for_pickup && !purchase.user_pickup_verified"
+                <button v-if="purchase.ready_for_pickup && !purchase.user_pickup_verified && purchase.payment_status === 'verified'"
                   @click="confirmPickupVerification(purchase)"
                   class="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm">
                   Verify Pickup
                 </button>
-
-                <!-- Status indicators -->
-                <span v-if="purchase.status === 'completed'" class="block text-center text-green-600 text-sm">
-                  Completed ✓
-                </span>
-
-                <!-- Payment proof upload -->
-                <PaymentProofUpload v-if="purchase.status === 'confirmed' || purchase.status === 'ready_for_pickup'"
-                  :purchase="purchase" />
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <!-- Floating Modal -->
+
+      <!-- Report Modal -->
       <teleport to="body">
         <div v-if="selectedReport" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg transition-transform transform scale-95"
-            role="dialog" aria-modal="true">
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800" style="font-family: 'Courier New', Courier, monospace;">
-                Purchase Receipt</h3>
-              <button @click="closeModal" class="text-gray-400 hover:text-gray-500 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                  stroke="currentColor" class="w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold">Purchase Report</h3>
+              <button @click="closeModal" class="text-gray-500 hover:text-gray-700">
+                <span class="sr-only">Close</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div
-              style="font-family: 'Courier New', Courier, monospace; max-width: 300px; margin: auto; padding: 20px; border: 1px solid #ccc; background-color: #f7f7f7;">
-              <h2 style="text-align: center; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">Receipt</h2>
-              <p><strong>Transaction No:</strong> {{ selectedReport.transaction_number }}</p>
-              <p><strong>Customer Name:</strong> {{ selectedReport.user?.name || 'Unknown User' }}</p>
+            <!-- Report Content -->
+            <div class="space-y-4">
+              <p><strong>Transaction ID:</strong> {{ selectedReport.transaction_number }}</p>
               <p><strong>Medicine:</strong> {{ selectedReport.name }}</p>
               <p><strong>Quantity:</strong> {{ selectedReport.quantity }}</p>
-              <p><strong>Total:</strong> ₱{{ selectedReport.total_amount }}</p>
+              <p><strong>Total Amount:</strong> ₱{{ selectedReport.total_amount }}</p>
               <p><strong>Status:</strong> {{ formatStatus(selectedReport.status) }}</p>
-              <p><strong>Date:</strong> {{ new Date(selectedReport.created_at).toLocaleString() }}</p>
-              <p v-if="selectedReport.pickup_deadline">
-                <strong>Pickup Deadline:</strong>
-                {{ new Date(selectedReport.pickup_deadline).toLocaleString() }}
-              </p>
-              <p style="text-align: center; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px;">Thank you
-                for
-                your purchase!</p>
-            </div>
-
-            <div class="flex justify-center mt-6">
-              <button @click="closeModal"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition">
-                Close
-              </button>
+              <p><strong>Purchase Date:</strong> {{ new Date(selectedReport.created_at).toLocaleString() }}</p>
             </div>
           </div>
         </div>
       </teleport>
-
     </div>
   </AuthenticatedLayout>
 </template>
@@ -175,16 +175,9 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import Swal from 'sweetalert2';
 import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
-import PaymentProofUpload from '@/Components/PaymentProofUpload.vue';
 
 const props = defineProps({
-  purchases: Array,
-});
-
-const selectedFile = ref(null);
-const form = useForm({
-  payment_proof: null
+  purchases: Array
 });
 
 const selectedReport = ref(null);
@@ -197,21 +190,18 @@ function closeModal() {
   selectedReport.value = null;
 }
 
-
 function formatStatus(status) {
   switch (status) {
     case 'pending':
       return 'Pending';
     case 'confirmed':
       return 'Confirmed';
-    case 'ready_for_pickup':
-      return 'Ready for Pickup';
-    case 'verified':
-      return 'User Verified';
     case 'completed':
       return 'Completed';
     case 'cancelled':
       return 'Cancelled';
+    case 'rejected':
+      return 'Rejected';
     default:
       return status;
   }
@@ -220,7 +210,7 @@ function formatStatus(status) {
 function confirmCancel(purchase) {
   Swal.fire({
     title: 'Cancel Purchase',
-    text: `Are you sure you want to cancel this purchase of ${purchase.name}?`,
+    text: 'Are you sure you want to cancel this purchase?',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Yes, cancel it!',
@@ -229,11 +219,11 @@ function confirmCancel(purchase) {
     cancelButtonText: 'No, keep it'
   }).then((result) => {
     if (result.isConfirmed) {
-      router.delete(route('purchase.cancel', purchase.id), {
+      router.post(route('purchase.cancel', purchase.id), {}, {
         onSuccess: () => {
           Swal.fire({
             title: 'Cancelled!',
-            text: 'Your purchase has been successfully canceled.',
+            text: 'Your purchase has been cancelled.',
             icon: 'success',
             timer: 2000,
             showConfirmButton: false
@@ -245,32 +235,33 @@ function confirmCancel(purchase) {
 }
 
 function confirmPickupVerification(purchase) {
+  if (purchase.payment_status !== 'verified') {
+    Swal.fire({
+      title: 'Cannot Verify Pickup',
+      text: 'Please wait for admin to verify your payment proof first.',
+      icon: 'warning',
+      confirmButtonText: 'OK'
+    });
+    return;
+  }
+
   Swal.fire({
     title: 'Verify Pickup',
-    text: 'Confirm that you have picked up your medicine?',
-    icon: 'question',
+    text: 'Are you sure you want to verify this pickup? This action cannot be undone.',
+    icon: 'warning',
     showCancelButton: true,
-    confirmButtonText: 'Yes, I have it',
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
-    cancelButtonText: 'Not yet'
+    confirmButtonText: 'Yes, verify pickup',
+    cancelButtonText: 'Cancel'
   }).then((result) => {
     if (result.isConfirmed) {
       router.post(route('purchase.verify-pickup', purchase.id), {}, {
         onSuccess: () => {
           Swal.fire({
-            title: 'Verified!',
-            text: 'Thank you for confirming your pickup.',
+            title: 'Pickup Verified!',
+            text: 'Thank you for verifying your pickup.',
             icon: 'success',
             timer: 2000,
             showConfirmButton: false
-          });
-        },
-        onError: () => {
-          Swal.fire({
-            title: 'Error!',
-            text: 'Failed to verify pickup. Please try again.',
-            icon: 'error'
           });
         }
       });
@@ -278,21 +269,41 @@ function confirmPickupVerification(purchase) {
   });
 }
 
-function handleFileChange(e) {
-  selectedFile.value = e.target.files[0];
-}
-
-function uploadPaymentProof(purchaseId) {
-  if (!selectedFile.value) return;
+const handleFileUpload = async (file, purchaseId) => {
+  if (!file) return;
 
   const formData = new FormData();
-  formData.append('payment_proof', selectedFile.value);
+  formData.append('payment_proof', file);
 
-  form.post(route('purchase.upload-payment', purchaseId), {
-    preserveScroll: true,
-    onSuccess: () => {
-      selectedFile.value = null;
-    }
-  });
-}
+  try {
+    await router.post(route('purchase.upload-payment', purchaseId), formData, {
+      onSuccess: () => {
+        Swal.fire({
+          title: 'Success!',
+          text: 'Payment proof uploaded successfully.',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      },
+      onError: (errors) => {
+        console.error('Upload error:', errors);
+        Swal.fire({
+          title: 'Error!',
+          text: errors.payment_proof || Object.values(errors)[0] || 'Failed to upload payment proof.',
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    Swal.fire({
+      title: 'Error!',
+      text: 'An unexpected error occurred while uploading the payment proof. Please try again.',
+      icon: 'error',
+      confirmButtonText: 'OK'
+    });
+  }
+};
 </script>

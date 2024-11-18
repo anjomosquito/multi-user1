@@ -52,8 +52,8 @@ const showingNavigationDropdown = ref(false);
                                     Medicines
                                 </NavLink>
 
-                                <NavLink :href="route('admin.admininventory.index')"
-                                    :active="route().current('admin.admininventory.index')">
+                                <NavLink :href="route('admin.inventory.index')"
+                                    :active="route().current('admin.inventory.index')">
                                     <i class="fas fa-box text-purple-500"
                                         style="font-size: 25px; width: 30px; height: 30px"></i>
                                     Inventory

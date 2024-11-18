@@ -26,9 +26,21 @@
       </div>
 
       <div v-else>
+        <div class="mb-4 flex justify-between items-center">
+          <div class="flex items-center">
+            <input type="checkbox" :checked="selectAll" @change="toggleSelectAll" class="mr-2 h-4 w-4">
+            <label>Select All</label>
+          </div>
+          <button v-if="selectedItems.size > 0" @click="confirmOrder" 
+            class="px-4 py-2 bg-[#28a745] hover:bg-green-600 text-white rounded">
+            Order Selected ({{ selectedItems.size }})
+          </button>
+        </div>
+
         <table class="min-w-full bg-white border border-gray-200 shadow-md rounded-lg overflow-hidden">
           <thead class="bg-gray-100">
             <tr>
+              <th class="px-6 py-3 text-left text-gray-600">Select</th>
               <th class="px-6 py-3 text-left text-gray-600">Medicine Name</th>
               <th class="px-6 py-3 text-left text-gray-600">Quantity</th>
               <th class="px-6 py-3 text-left text-gray-600">Price</th>
@@ -40,6 +52,12 @@
           </thead>
           <tbody>
             <tr v-for="item in cartItems" :key="item.id" class="border-b hover:bg-gray-50 transition-colors">
+              <td class="px-6 py-4">
+                <input type="checkbox" 
+                  :checked="selectedItems.has(item.id)" 
+                  @change="toggleSelect(item.id)"
+                  class="h-4 w-4">
+              </td>
               <td class="px-6 py-4">{{ item.name }}</td>
               <td class="px-6 py-4 flex items-center">
                 <button @click="decrementQuantity(item)" class="px-2 py-1 bg-gray-300 rounded-l">-</button>
@@ -52,11 +70,8 @@
               <td class="px-6 py-4">{{ item.expdate }}</td>
               <td class="px-6 py-4">
                 <button @click="confirmRemove(item)"
-                  class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded mr-1">
+                  class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
                   Remove
-                </button>
-                <button @click="confirmOrder" class="px-4 py-2 bg-[#28a745] hover:bg-green-600 text-white rounded">
-                  Order
                 </button>
               </td>
             </tr>
@@ -71,11 +86,36 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Swal from 'sweetalert2';
 import { router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 const props = defineProps({
   cartItems: Array,
   cartCount: Number,
 });
+
+const selectedItems = ref(new Set());
+const selectAll = ref(false);
+
+const toggleSelectAll = () => {
+  selectAll.value = !selectAll.value;
+  if (selectAll.value) {
+    selectedItems.value = new Set(props.cartItems.map(item => item.id));
+  } else {
+    selectedItems.value.clear();
+  }
+};
+
+const toggleSelect = (itemId) => {
+  if (selectedItems.value.has(itemId)) {
+    selectedItems.value.delete(itemId);
+    selectAll.value = false;
+  } else {
+    selectedItems.value.add(itemId);
+    if (selectedItems.value.size === props.cartItems.length) {
+      selectAll.value = true;
+    }
+  }
+};
 
 const incrementQuantity = (item) => {
   item.quantity++;
@@ -99,9 +139,9 @@ function confirmRemove(item) {
     cancelButtonText: 'Cancel'
   }).then((result) => {
     if (result.isConfirmed) {
-      // Proceed with removal via route
       router.delete(route('cart.destroy', item.id), {
         onSuccess: () => {
+          selectedItems.value.delete(item.id);
           Swal.fire({
             title: 'Removed!',
             text: `${item.name} has been removed from your cart.`,
@@ -116,9 +156,21 @@ function confirmRemove(item) {
 }
 
 function confirmOrder() {
+  const selectedCartItems = props.cartItems.filter(item => selectedItems.value.has(item.id));
+  
+  if (selectedCartItems.length === 0) {
+    Swal.fire({
+      title: 'No Items Selected',
+      text: 'Please select at least one item to order.',
+      icon: 'warning',
+      confirmButtonText: 'OK'
+    });
+    return;
+  }
+
   Swal.fire({
     title: 'Place Order',
-    text: 'Are you sure you want to place this order?',
+    text: `Are you sure you want to place order for ${selectedCartItems.length} selected item(s)?`,
     icon: 'info',
     showCancelButton: true,
     confirmButtonText: 'Yes, order now!',
@@ -127,8 +179,10 @@ function confirmOrder() {
     cancelButtonText: 'Cancel'
   }).then((result) => {
     if (result.isConfirmed) {
-      router.post(route('purchase.store'), { cartItems: props.cartItems }, {
+      router.post(route('purchase.store'), { cartItems: selectedCartItems }, {
         onSuccess: () => {
+          selectedItems.value.clear();
+          selectAll.value = false;
           Swal.fire({
             title: 'Order Placed!',
             text: 'Your purchase has been successfully completed.',

@@ -1,6 +1,5 @@
 <template>
   <AdminAuthenticatedLayout>
-
     <Head title="Purchase Management" />
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-12">
@@ -14,10 +13,18 @@
         {{ $page.props.flash.error }}
       </div>
 
-      <h2 class="text-2xl font-semibold mb-6">Purchase Management</h2>
-      <button @click="generateReport" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-        Generate Reports
-      </button>
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold">Purchase Management</h2>
+        <button 
+          @click="showReportModal = true"
+          class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Generate Reports
+        </button>
+      </div>
 
       <!-- Purchase List -->
       <div class="bg-white shadow-sm rounded-lg overflow-hidden">
@@ -167,52 +174,13 @@
           <div class="text-gray-500">No purchases found</div>
         </div>
       </div>
-      <!-- Floating Modal -->
-      <teleport to="body">
-        <div v-if="selectedReport" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg transition-transform transform scale-95"
-            role="dialog" aria-modal="true">
-            <div class="flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800" style="font-family: 'Courier New', Courier, monospace;">
-                Purchase Receipt
-              </h3>
-              <button @click="closeModal" class="text-gray-400 hover:text-gray-500 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
-                  stroke="currentColor" class="w-6 h-6">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div
-              style="font-family: 'Courier New', Courier, monospace; max-width: 300px; margin: auto; padding: 20px; border: 1px solid #ccc; background-color: #f7f7f7;">
-              <h2 style="text-align: center; border-bottom: 1px dashed #ccc; padding-bottom: 10px;">Receipt</h2>
-              <p><strong>Transaction No:</strong> {{ selectedReport.transaction_number }}</p>
-              <p><strong>Customer Name:</strong> {{ selectedReport.user?.name || 'Unknown User' }}</p>
-              <p><strong>Medicine:</strong> {{ selectedReport.name }}</p>
-              <p><strong>Quantity:</strong> {{ selectedReport.quantity }}</p>
-              <p><strong>Total:</strong> ₱{{ selectedReport.total_amount }}</p>
-              <p><strong>Status:</strong> {{ formatStatus(selectedReport.status) }}</p>
-              <p><strong>Date:</strong> {{ new Date(selectedReport.created_at).toLocaleString() }}</p>
-              <p v-if="selectedReport.pickup_deadline">
-                <strong>Pickup Deadline:</strong>
-                {{ new Date(selectedReport.pickup_deadline).toLocaleString() }}
-              </p>
-              <p style="text-align: center; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 10px;">Thank you
-                for
-                your purchase!</p>
-            </div>
-            <div class="flex justify-center mt-6">
-              <button @click="closeModal"
-                class="align-items-center w-4/12 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      </teleport>
 
-
-
+      <!-- Report Modal -->
+      <ReportModal 
+        v-if="showReportModal"
+        @close="showReportModal = false"
+        @success="handleReportSuccess"
+      />
     </div>
   </AdminAuthenticatedLayout>
 </template>
@@ -221,8 +189,10 @@
 import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import AdminAuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import ReportModal from '@/Components/ReportModal.vue';
 import Swal from 'sweetalert2';
+import { Head } from '@inertiajs/vue3';
+import axios from 'axios';
 
 const props = defineProps({
   purchases: {
@@ -230,7 +200,9 @@ const props = defineProps({
     required: true
   }
 });
+const showReportModal = ref(false);
 const selectedReport = ref(null);
+const loadingStates = ref(new Set());
 
 function viewReport(purchase) {
   selectedReport.value = purchase;
@@ -239,30 +211,16 @@ function viewReport(purchase) {
 function closeModal() {
   selectedReport.value = null;
 }
-const loadingStates = ref(new Set());
 
-function generateReport() {
+const handleReportSuccess = (message) => {
   Swal.fire({
-    title: 'Generate Report',
-    text: 'Do you want to generate a report of all purchases?',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, generate it',
-    cancelButtonText: 'Cancel'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      router.get(route('admin.purchase.report'), {}, {
-        onSuccess: () => {
-          Swal.fire('Report Generated!', 'Your report is ready.', 'success');
-        },
-        onError: () => {
-          Swal.fire('Error!', 'Failed to generate the report.', 'error');
-        }
-      });
-    }
+    icon: 'success',
+    title: 'Success',
+    text: message,
+    timer: 2000,
+    showConfirmButton: false
   });
-}
-
+};
 
 function setLoading(id, isLoading) {
   if (isLoading) {
