@@ -40,7 +40,7 @@ const { props } = usePage();
 
                     <!-- Low Stock Alert -->
                     <div class="col-span-12 md:col-span-3">
-                        <Link :href="route('admin.admininventory.index')" :active="route().current('admin.admininventory.index')">
+                        <Link :href="route('admin.inventory.index')" :active="route().current('admin.inventory.index')">
                             <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg h-40">
                             <div class="p-6 text-gray-900 dark:text-gray-100">
                                 <h3 class="text-lg font-semibold">Low Stock Items:</h3>
@@ -163,4 +163,3 @@ const { props } = usePage();
         </div>
     </AuthenticatedLayout>
 </template>
-
