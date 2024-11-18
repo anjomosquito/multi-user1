@@ -158,10 +158,10 @@
                       class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm">
                       Verify Payment
                     </button>
-                    <button @click="verifyPayment(purchase.id, 'rejected')"
+                    <!--<button @click="verifyPayment(purchase.id, 'rejected')"
                       class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
                       Reject Payment
-                    </button>
+                    </button>-->
                   </div>
                 </div>
               </td>
@@ -205,7 +205,11 @@ const selectedReport = ref(null);
 const loadingStates = ref(new Set());
 
 function viewReport(purchase) {
-  selectedReport.value = purchase;
+  // Generate the report URL
+  const reportUrl = route('admin.purchase.report', { purchase: purchase.id });
+  
+  // Open in new window/tab
+  window.open(reportUrl, '_blank');
 }
 
 function closeModal() {

@@ -12,6 +12,8 @@ use App\Notifications\OrderReadyForPickup;
 use App\Notifications\PurchaseNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class AdminPurchaseController extends Controller
 {
@@ -310,5 +312,39 @@ class AdminPurchaseController extends Controller
             return 'ready';
         }
         return null;
+    }
+
+    public function generatePurchaseReport(Purchase $purchase)
+    {
+        // Get the purchase with related data
+        $purchase = Purchase::with(['user', 'medicine'])
+            ->where('id', $purchase->id)
+            ->first();
+
+        if (!$purchase) {
+            abort(404);
+        }
+
+        // Format the data for the report
+        $reportData = [
+            'transaction_number' => str_pad($purchase->id, 5, '0', STR_PAD_LEFT),
+            'date' => Carbon::parse($purchase->created_at)->format('M d, Y h:i A'),
+            'customer_name' => $purchase->user->name ?? 'N/A',
+            'medicine_name' => $purchase->name,
+            'dosage' => $purchase->dosage,
+            'quantity' => $purchase->quantity,
+            'unit_price' => number_format($purchase->mprice, 2),
+            'total_amount' => number_format($purchase->quantity * $purchase->mprice, 2),
+            'status' => $purchase->status,
+            'payment_status' => $purchase->payment_status,
+            'payment_proof' => $purchase->payment_proof,
+            'verification_date' => $purchase->payment_verified_at ? Carbon::parse($purchase->payment_verified_at)->format('M d, Y h:i A') : 'N/A'
+        ];
+
+        // Generate PDF
+        $pdf = PDF::loadView('reports.purchase-detail', ['purchase' => $reportData]);
+        
+        // Return the PDF for download or viewing
+        return $pdf->stream("purchase-{$reportData['transaction_number']}.pdf");
     }
 }
