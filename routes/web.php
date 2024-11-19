@@ -94,7 +94,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/inventory/report/download', [AdminInventoryController::class, 'downloadReport'])->name('inventory.report.download');
         
         // Inventory Report Routes
-        Route::get('/inventory/report', [AdminInventoryController::class, 'getInventoryReport'])->name('inventory.report');
+        Route::get('admin/inventory/report', [AdminInventoryController::class, 'getInventoryReport'])->name('admin.inventory.report');
         Route::post('/inventory/report/download', [AdminInventoryController::class, 'downloadReport'])->name('inventory.report.download');
         
         // Users Routes
