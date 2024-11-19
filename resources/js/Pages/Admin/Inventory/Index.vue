@@ -2,6 +2,8 @@
 import AuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import { router } from '@inertiajs/vue3';
+import Swal from 'sweetalert2'; // Import SweetAlert2
 
 const props = defineProps({
     medicines: Array,
@@ -82,10 +84,51 @@ function updateMedicine() {
 }
 
 function confirmDelete(medicineId) {
-    if (confirm('Are you sure you want to delete this medicine?')) {
-        router.delete(route('admin.inventory.destroy', medicineId));
-    }
+    if (!medicineId) return;
+
+    // Use SweetAlert for confirmation
+    Swal.fire({
+        title: 'Are you sure?',
+        text: 'You will not be able to recover this medicine!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'No, cancel!',
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Perform delete action via router
+            router.delete(route('admin.medicines.destroy', medicineId), {
+                onSuccess: () => {
+                    // Show success notification
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: 'The medicine has been deleted.',
+                        icon: 'success',
+                        confirmButtonColor: '#3085d6',
+                    });
+
+                    // Optionally redirect to the index page
+                    router.get(route('admin.admininventory.index'));
+                },
+                onError: () => {
+                    // Show error notification if delete fails
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Failed to delete the medicine.',
+                        icon: 'error',
+                        confirmButtonColor: '#3085d6',
+                    });
+                },
+            });
+        } else {
+            // Navigate to the medicines index page
+            router.get(route('admin.admininventory'));
+        }
+    });
 }
+
 
 function toggleStatus(medicine) {
     router.put(route('admin.inventory.toggle-status', medicine.id));
