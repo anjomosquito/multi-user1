@@ -18,7 +18,7 @@ class AdminInventoryController extends Controller
     {
         // Update medicine statuses based on quantity and expiry date
         $this->updateMedicineStatuses();
-        
+
         $medicines = Medicine::with('category')->get();
         $categories = MedicineCategory::all();
         $logs = InventoryLog::with(['medicine', 'admin'])
@@ -36,33 +36,35 @@ class AdminInventoryController extends Controller
     private function updateMedicineStatuses()
     {
         $today = Carbon::now();
-        
+
         // Get all medicines
         $medicines = Medicine::all();
-        
+
         foreach ($medicines as $medicine) {
             $shouldDisable = false;
             $statusReason = '';
-            
+
             // Check quantity
             if ($medicine->quantity <= 0) {
                 $shouldDisable = true;
                 $statusReason = 'Out of stock';
             }
-            
+
             // Check expiry date
             if (!$shouldDisable && Carbon::parse($medicine->expdate)->lte($today)) {
                 $shouldDisable = true;
                 $statusReason = 'Expired';
             }
-            
+
             // Update status if needed
             if ($shouldDisable && $medicine->status !== 'disabled') {
                 $medicine->status = 'disabled';
                 $medicine->status_reason = $statusReason;
                 $medicine->save();
-            } elseif (!$shouldDisable && $medicine->status === 'disabled' && 
-                     ($medicine->status_reason === 'Out of stock' || $medicine->status_reason === 'Expired')) {
+            } elseif (
+                !$shouldDisable && $medicine->status === 'disabled' &&
+                ($medicine->status_reason === 'Out of stock' || $medicine->status_reason === 'Expired')
+            ) {
                 $medicine->status = 'active';
                 $medicine->status_reason = null;
                 $medicine->save();
@@ -86,7 +88,7 @@ class AdminInventoryController extends Controller
         // Set initial status based on quantity and expiry date
         $today = Carbon::now();
         $expDate = Carbon::parse($validated['expdate']);
-        
+
         if ($validated['quantity'] <= 0) {
             $validated['status'] = 'disabled';
             $validated['status_reason'] = 'Out of stock';
@@ -133,7 +135,7 @@ class AdminInventoryController extends Controller
         // Update status based on new quantity and expiry date
         $today = Carbon::now();
         $expDate = Carbon::parse($validated['expdate']);
-        
+
         if ($validated['quantity'] <= 0) {
             $validated['status'] = 'disabled';
             $validated['status_reason'] = 'Out of stock';
@@ -228,9 +230,10 @@ class AdminInventoryController extends Controller
 
         return Inertia::render('Admin/Inventory/Report', [
             'logs' => $logs,
-            'filters' => $request->only(['start_date', 'end_date', 'action_type'])
+            'filters' => $request->only(['start_date', 'end_date', 'action_type']),
         ]);
     }
+
 
     public function downloadReport(Request $request)
     {
@@ -256,7 +259,7 @@ class AdminInventoryController extends Controller
         foreach ($logs as $log) {
             $csv->insertOne([
                 $log->created_at->format('Y-m-d H:i:s'),
-                $log->medicine->name,
+                $log->medicine?->name ?? 'Unknown',
                 $log->action_type,
                 $log->quantity_change,
                 $log->old_quantity,

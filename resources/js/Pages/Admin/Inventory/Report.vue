@@ -58,7 +58,7 @@
                                 <tr v-for="log in logs" :key="log.id" 
                                     class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                                     <td class="px-6 py-4">{{ formatDate(log.created_at) }}</td>
-                                    <td class="px-6 py-4">{{ log.medicine.name }}</td>
+                                    <td class="px-6 py-4">{{ log.medicine ? log.medicine.name : 'Unknown' }}</td>
                                     <td class="px-6 py-4">
                                         <span :class="{
                                             'px-2 py-1 rounded text-white': true,
