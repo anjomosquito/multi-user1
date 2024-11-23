@@ -80,6 +80,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         
         // Medicine Routes
         Route::resource('medicines', MedicineController::class);
+        Route::get('medicines/details/{name}', [MedicineController::class, 'getMedicineDetails'])->name('medicines.details');
         
         // Category Routes
         Route::resource('categories', MedicineCategoryController::class)->except(['show']);

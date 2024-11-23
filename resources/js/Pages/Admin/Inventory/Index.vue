@@ -1,8 +1,9 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { router } from '@inertiajs/vue3';
+import axios from 'axios'; // Import axios
 import Swal from 'sweetalert2'; // Import SweetAlert2
 
 const props = defineProps({
@@ -25,6 +26,33 @@ const form = useForm({
     dosage: '',
     expdate: '',
     category_id: '',
+    isExistingMedicine: false
+});
+
+// Add watcher for medicine name
+watch(() => form.name, async (newName) => {
+    if (newName && newName.length >= 2) {
+        try {
+            const response = await axios.get(route('medicines.details', { name: newName }));
+            if (response.data.exists) {
+                // Auto-populate fields for existing medicine
+                form.isExistingMedicine = true;
+                form.lprice = response.data.lprice;
+                form.mprice = response.data.mprice;
+                form.hprice = response.data.hprice;
+                form.dosage = response.data.dosage;
+            } else {
+                // Clear fields for new medicine
+                form.isExistingMedicine = false;
+                form.lprice = '';
+                form.mprice = '';
+                form.hprice = '';
+                form.dosage = '';
+            }
+        } catch (error) {
+            console.error('Error fetching medicine details:', error);
+        }
+    }
 });
 
 const editForm = useForm({
@@ -255,17 +283,23 @@ function toggleStatus(medicine) {
                     <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium mb-1">Low Price</label>
-                            <input v-model="form.lprice" type="number" step="0.01" class="w-full rounded-md" required>
+                            <input v-model="form.lprice" type="number" step="0.01" 
+                                   :class="['w-full rounded-md', {'bg-gray-100': form.isExistingMedicine}]" 
+                                   :readonly="form.isExistingMedicine" required>
                             <div v-if="form.errors.lprice" class="text-red-500 text-sm">{{ form.errors.lprice }}</div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1">Median Price</label>
-                            <input v-model="form.mprice" type="number" step="0.01" class="w-full rounded-md" required>
+                            <input v-model="form.mprice" type="number" step="0.01" 
+                                   :class="['w-full rounded-md', {'bg-gray-100': form.isExistingMedicine}]" 
+                                   :readonly="form.isExistingMedicine" required>
                             <div v-if="form.errors.mprice" class="text-red-500 text-sm">{{ form.errors.mprice }}</div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-1">High Price</label>
-                            <input v-model="form.hprice" type="number" step="0.01" class="w-full rounded-md" required>
+                            <input v-model="form.hprice" type="number" step="0.01" 
+                                   :class="['w-full rounded-md', {'bg-gray-100': form.isExistingMedicine}]" 
+                                   :readonly="form.isExistingMedicine" required>
                             <div v-if="form.errors.hprice" class="text-red-500 text-sm">{{ form.errors.hprice }}</div>
                         </div>
                     </div>
@@ -276,7 +310,9 @@ function toggleStatus(medicine) {
                     </div>
                     <div>
                         <label class="block text-sm font-medium mb-1">Dosage</label>
-                        <input v-model="form.dosage" type="text" class="w-full rounded-md" required>
+                        <input v-model="form.dosage" type="text" 
+                               :class="['w-full rounded-md', {'bg-gray-100': form.isExistingMedicine}]" 
+                               :readonly="form.isExistingMedicine" required>
                         <div v-if="form.errors.dosage" class="text-red-500 text-sm">{{ form.errors.dosage }}</div>
                     </div>
                     <div>

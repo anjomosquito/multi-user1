@@ -85,38 +85,78 @@ class AdminInventoryController extends Controller
             'category_id' => 'nullable|exists:medicine_categories,id'
         ]);
 
-        // Set initial status based on quantity and expiry date
-        $today = Carbon::now();
-        $expDate = Carbon::parse($validated['expdate']);
+        // Check if medicine already exists
+        $existingMedicine = Medicine::where('name', $validated['name'])->first();
 
-        if ($validated['quantity'] <= 0) {
-            $validated['status'] = 'disabled';
-            $validated['status_reason'] = 'Out of stock';
-        } elseif ($expDate->lte($today)) {
-            $validated['status'] = 'disabled';
-            $validated['status_reason'] = 'Expired';
+        if ($existingMedicine) {
+            // Update existing medicine quantity
+            $oldQuantity = $existingMedicine->quantity;
+            $existingMedicine->quantity += $validated['quantity'];
+            $existingMedicine->expdate = $validated['expdate'];
+
+            // Update status based on new quantity and expiry date
+            $today = Carbon::now();
+            $expDate = Carbon::parse($validated['expdate']);
+
+            if ($existingMedicine->quantity <= 0) {
+                $existingMedicine->status = 'disabled';
+                $existingMedicine->status_reason = 'Out of stock';
+            } elseif ($expDate->lte($today)) {
+                $existingMedicine->status = 'disabled';
+                $existingMedicine->status_reason = 'Expired';
+            } else {
+                $existingMedicine->status = 'active';
+                $existingMedicine->status_reason = null;
+            }
+
+            $existingMedicine->save();
+
+            // Log the update
+            InventoryLog::create([
+                'medicine_id' => $existingMedicine->id,
+                'admin_id' => Auth::id(),
+                'action_type' => 'update',
+                'quantity_change' => $validated['quantity'],
+                'old_quantity' => $oldQuantity,
+                'new_quantity' => $existingMedicine->quantity,
+                'old_price' => $existingMedicine->lprice,
+                'new_price' => $existingMedicine->lprice,
+                'notes' => 'Medicine quantity updated and expiration date changed'
+            ]);
+
+            return redirect()->back()->with('success', 'Medicine quantity updated successfully');
         } else {
-            $validated['status'] = 'active';
+            // Create new medicine
+            $medicine = Medicine::create([
+                'name' => $validated['name'],
+                'lprice' => $validated['lprice'],
+                'mprice' => $validated['mprice'],
+                'hprice' => $validated['hprice'],
+                'quantity' => $validated['quantity'],
+                'dosage' => $validated['dosage'],
+                'expdate' => $validated['expdate'],
+                'status' => $validated['quantity'] > 0 ? 'active' : 'disabled',
+                'status_reason' => $validated['quantity'] <= 0 ? 'Out of stock' : null
+            ]);
+
+            if (isset($validated['category_id'])) {
+                $medicine->category()->associate(MedicineCategory::find($validated['category_id']));
+                $medicine->save();
+            }
+
+            // Log the addition
+            InventoryLog::create([
+                'medicine_id' => $medicine->id,
+                'admin_id' => Auth::id(),
+                'action_type' => 'add',
+                'quantity_change' => $validated['quantity'],
+                'new_quantity' => $validated['quantity'],
+                'new_price' => $validated['lprice'],
+                'notes' => 'Initial medicine addition'
+            ]);
+
+            return redirect()->back()->with('success', 'New medicine added successfully');
         }
-
-        $medicine = Medicine::create($validated);
-        if (isset($validated['category_id'])) {
-            $medicine->category()->associate(MedicineCategory::find($validated['category_id']));
-            $medicine->save();
-        }
-
-        // Log the addition
-        InventoryLog::create([
-            'medicine_id' => $medicine->id,
-            'admin_id' => Auth::id(),
-            'action_type' => 'add',
-            'quantity_change' => $validated['quantity'],
-            'new_quantity' => $validated['quantity'],
-            'new_price' => $validated['lprice'],
-            'notes' => 'Initial medicine addition'
-        ]);
-
-        return redirect()->back()->with('success', 'Medicine added successfully');
     }
 
     public function update(Request $request, Medicine $medicine)

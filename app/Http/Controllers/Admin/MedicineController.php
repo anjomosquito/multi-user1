@@ -143,4 +143,25 @@ class MedicineController extends Controller
         $medicine->delete();
         return Redirect::route('admin.medicines.index')->with('success', 'Medicine has been deleted.');
     }
+
+    public function getMedicineDetails($name)
+    {
+        try {
+            $medicine = Medicine::where('name', 'LIKE', $name . '%')->first();
+            
+            if ($medicine) {
+                return response()->json([
+                    'exists' => true,
+                    'lprice' => $medicine->lprice,
+                    'mprice' => $medicine->mprice,
+                    'hprice' => $medicine->hprice,
+                    'dosage' => $medicine->dosage,
+                ]);
+            }
+            
+            return response()->json(['exists' => false]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch medicine details'], 500);
+        }
+    }
 }
