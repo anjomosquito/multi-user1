@@ -34,7 +34,8 @@ class Purchase extends Model
         'payment_proof',
         'payment_status',
         'payment_verified_at',
-        'payment_verified_by'
+        'payment_verified_by',
+        'transaction_id'
     ];
 
     // Define status constants

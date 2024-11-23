@@ -19,8 +19,11 @@ class PurchaseController extends Controller
     {
         $cartItems = $request->input('cartItems');
 
+        // Generate a unique transaction ID for this group of purchases
+        $transactionId = 'TXN-' . time() . '-' . Auth::id() . '-' . uniqid();
+
         // Start a transaction to ensure data integrity
-        DB::transaction(function () use ($cartItems) {
+        DB::transaction(function () use ($cartItems, $transactionId) {
             foreach ($cartItems as $item) {
                 $medicine = Medicine::find($item['medicine_id']);
 
@@ -41,7 +44,8 @@ class PurchaseController extends Controller
                         'dosage' => $item['dosage'],
                         'expdate' => $item['expdate'],
                         'purchase_date' => now(),
-                        'status' => 'pending', // Changed from 'completed' to 'pending'
+                        'status' => 'pending',
+                        'transaction_id' => $transactionId
                     ]);
                 } else {
                     // If quantity is insufficient, throw an exception to cancel the transaction
@@ -59,65 +63,73 @@ class PurchaseController extends Controller
     public function index()
     {
         $purchases = Purchase::where('user_id', Auth::id())
-            ->with('user') // Load the user relationship
+            ->with('user')
             ->latest()
             ->get()
-            ->map(function ($purchase) {
+            ->groupBy('transaction_id') // Group purchases by transaction_id
+            ->map(function ($group) {
+                $firstPurchase = $group->first();
                 return [
-                    'id' => $purchase->id,
-                    'name' => $purchase->name,
-                    'user' => $purchase->user ? ['name' => $purchase->user->name] : null, // Include the user's name
-                    'quantity' => $purchase->quantity,
-                    'mprice' => $purchase->mprice,
-                    'total_amount' => $purchase->mprice * $purchase->quantity,
-                    'dosage' => $purchase->dosage,
-                    'expdate' => $purchase->expdate,
-                    'purchase_date' => $purchase->purchase_date,
-                    'status' => $purchase->status,
-                    'ready_for_pickup' => $purchase->ready_for_pickup,
-                    'pickup_ready_at' => $purchase->pickup_ready_at,
-                    'pickup_deadline' => $purchase->pickup_deadline,
-                    'created_at' => $purchase->created_at,
-                    'admin_pickup_verified' => $purchase->admin_pickup_verified,
-                    'user_pickup_verified' => $purchase->user_pickup_verified,
-                    'time_remaining' => $this->calculateTimeRemaining($purchase),
-                    'payment_proof' => $purchase->payment_proof,
-                    'payment_proof_url' => $purchase->payment_proof_url,
-                    'payment_status' => $purchase->payment_status,
-                    'transaction_number' => str_pad($purchase->id, 5, '0', STR_PAD_LEFT),
+                    'transaction_id' => $firstPurchase->transaction_id,
+                    'transaction_number' => str_pad($firstPurchase->id, 5, '0', STR_PAD_LEFT),
+                    'created_at' => $firstPurchase->created_at,
+                    'status' => $firstPurchase->status,
+                    'ready_for_pickup' => $firstPurchase->ready_for_pickup,
+                    'pickup_ready_at' => $firstPurchase->pickup_ready_at,
+                    'pickup_deadline' => $firstPurchase->pickup_deadline,
+                    'admin_pickup_verified' => $firstPurchase->admin_pickup_verified,
+                    'user_pickup_verified' => $firstPurchase->user_pickup_verified,
+                    'time_remaining' => $this->calculateTimeRemaining($firstPurchase),
+                    'payment_proof' => $firstPurchase->payment_proof,
+                    'payment_proof_url' => $firstPurchase->payment_proof_url,
+                    'payment_status' => $firstPurchase->payment_status,
+                    'items' => $group->map(function ($purchase) {
+                        return [
+                            'id' => $purchase->id,
+                            'name' => $purchase->name,
+                            'quantity' => $purchase->quantity,
+                            'mprice' => $purchase->mprice,
+                            'total_amount' => $purchase->mprice * $purchase->quantity,
+                            'dosage' => $purchase->dosage,
+                        ];
+                    })->values(),
+                    'total_amount' => $group->sum(function ($purchase) {
+                        return $purchase->mprice * $purchase->quantity;
+                    })
                 ];
-            });
+            })->values();
 
         return Inertia::render('Purchase/Index', [
             'purchases' => $purchases
         ]);
     }
 
-
     public function cancel($id)
     {
-        // Find the purchase by ID
-        $purchase = Purchase::where('user_id', Auth::id())->findOrFail($id);
+        // Find the purchase by transaction_id
+        $purchases = Purchase::where('transaction_id', $id)
+            ->where('user_id', Auth::id())
+            ->where('status', 'pending')
+            ->get();
 
-        // Only allow cancellation of pending purchases
-        if ($purchase->status === 'completed') {
-            return redirect()->route('purchase.index')
-                ->with('error', 'Cannot cancel completed purchases.');
+        if ($purchases->isEmpty()) {
+            return back()->with('error', 'Purchase not found or cannot be cancelled.');
         }
 
-        // Retrieve the corresponding medicine and update its quantity
-        $medicine = Medicine::find($purchase->medicine_id);
+        DB::transaction(function () use ($purchases) {
+            foreach ($purchases as $purchase) {
+                // Return the quantity back to inventory
+                $medicine = Medicine::find($purchase->medicine_id);
+                if ($medicine) {
+                    $medicine->increment('quantity', $purchase->quantity);
+                }
 
-        if ($medicine) {
-            // Increment the medicine's quantity in the inventory by the canceled purchase quantity
-            $medicine->increment('quantity', $purchase->quantity);
-        }
+                // Update purchase status to cancelled
+                $purchase->update(['status' => 'cancelled']);
+            }
+        });
 
-        // Delete the purchase record
-        $purchase->delete();
-
-        return redirect()->route('purchase.index')
-            ->with('success', 'Purchase canceled and inventory updated successfully.');
+        return back()->with('success', 'Purchase cancelled successfully.');
     }
 
     public function verifyPickup($id)

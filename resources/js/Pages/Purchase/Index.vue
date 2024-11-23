@@ -35,9 +35,8 @@
           <thead>
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction No</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Medicine</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pickup Status</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -45,10 +44,13 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
-            <tr v-for="purchase in purchases" :key="purchase.id">
+            <tr v-for="purchase in purchases" :key="purchase.transaction_id">
               <td class="px-6 py-4">{{ purchase.transaction_number }}</td>
-              <td class="px-6 py-4">{{ purchase.name }}</td>
-              <td class="px-6 py-4">{{ purchase.quantity }}</td>
+              <td class="px-6 py-4">
+                <div v-for="item in purchase.items" :key="item.id" class="mb-2">
+                  {{ item.name }} ({{ item.quantity }}x) - ₱{{ item.total_amount }}
+                </div>
+              </td>
               <td class="px-6 py-4">₱{{ purchase.total_amount }}</td>
               <td class="px-6 py-4">
                 <span :class="{
@@ -109,13 +111,13 @@
                      class="space-y-2">
                   <input
                     type="file"
-                    :ref="'fileInput' + purchase.id"
-                    @change="(e) => handleFileUpload(e.target.files[0], purchase.id)"
+                    :ref="'fileInput' + purchase.transaction_id"
+                    @change="(e) => handleFileUpload(e.target.files[0], purchase.transaction_id)"
                     accept="image/*,.pdf"
                     class="hidden"
                   />
                   <button
-                    @click="$refs['fileInput' + purchase.id][0].click()"
+                    @click="$refs['fileInput' + purchase.transaction_id][0].click()"
                     class="w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 
                            rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                   >
@@ -227,30 +229,9 @@ function formatStatus(status) {
 }
 
 function confirmCancel(purchase) {
-  Swal.fire({
-    title: 'Cancel Purchase',
-    text: 'Are you sure you want to cancel this purchase?',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, cancel it!',
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#3085d6',
-    cancelButtonText: 'No, keep it'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      router.post(route('purchase.cancel', purchase.id), {}, {
-        onSuccess: () => {
-          Swal.fire({
-            title: 'Cancelled!',
-            text: 'Your purchase has been cancelled.',
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false
-          });
-        }
-      });
-    }
-  });
+  if (confirm('Are you sure you want to cancel this purchase?')) {
+    router.delete(route('purchase.cancel', purchase.transaction_id));
+  }
 }
 
 function confirmPickupVerification(purchase) {
@@ -288,14 +269,15 @@ function confirmPickupVerification(purchase) {
   });
 }
 
-const handleFileUpload = async (file, purchaseId) => {
+const handleFileUpload = async (file, transactionId) => {
   if (!file) return;
 
   const formData = new FormData();
   formData.append('payment_proof', file);
+  formData.append('transaction_id', transactionId);
 
   try {
-    await router.post(route('purchase.upload-payment', purchaseId), formData, {
+    await router.post(route('purchase.upload-payment-proof'), formData, {
       onSuccess: () => {
         Swal.fire({
           title: 'Success!',
