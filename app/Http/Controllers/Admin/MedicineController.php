@@ -19,7 +19,7 @@ class MedicineController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Medicine::query();
+            $query = Medicine::with('category');
             
             if ($request->has('search')) {
                 $query->search($request->search);

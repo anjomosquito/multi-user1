@@ -38,6 +38,7 @@
                                 class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
                                     <th scope="col" class="px-6 py-3">Name</th>
+                                    <th scope="col" class="px-6 py-3">Category</th>
                                     <th scope="col" class="px-6 py-3">Low Price</th>
                                     <th scope="col" class="px-6 py-3">Median Price</th>
                                     <th scope="col" class="px-6 py-3">Highest Price</th>
@@ -50,7 +51,7 @@
                             </thead>
                             <tbody>
                                 <tr v-if="!medicines || medicines.length === 0">
-                                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                                    <td colspan="9" class="px-6 py-4 text-center text-gray-500">
                                         No medicines found
                                     </td>
                                 </tr>
@@ -60,6 +61,7 @@
                                         class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                         {{ medicine?.name || 'N/A' }}
                                     </th>
+                                    <td class="px-6 py-4">{{ medicine?.category?.name || 'N/A' }}</td>
                                     <td class="px-6 py-4">₱{{ medicine?.lprice || '0' }}</td>
                                     <td class="px-6 py-4">₱{{ medicine?.mprice || '0' }}</td>
                                     <td class="px-6 py-4">₱{{ medicine?.hprice || '0' }}</td>
