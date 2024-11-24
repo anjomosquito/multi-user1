@@ -130,139 +130,244 @@ class AdminPurchaseController extends Controller
                 throw new ModelNotFoundException('Transaction not found');
             }
 
+            // Validate purchase state
+            $firstPurchase = $purchases->first();
+            if ($firstPurchase->status !== 'pending') {
+                return back()->with('error', 'Only pending purchases can be confirmed');
+            }
+
+            if ($firstPurchase->payment_status === 'rejected') {
+                return back()->with('error', 'Cannot confirm purchase with rejected payment');
+            }
+
             \DB::transaction(function () use ($purchases) {
                 foreach ($purchases as $purchase) {
                     $purchase->update([
                         'status' => 'confirmed',
                         'confirmed_at' => now(),
-                        'confirmed_by' => auth('admin')->id()
+                        'confirmed_by' => auth('admin')->id(),
+                        'last_status_update' => now()
+                    ]);
+
+                    // Log the status change
+                    Log::info('Purchase confirmed', [
+                        'transaction_id' => $purchase->transaction_id,
+                        'purchase_id' => $purchase->id,
+                        'admin_id' => auth('admin')->id()
                     ]);
                 }
 
-                // Send confirmation email using the first purchase's user email
-                $firstPurchase = $purchases->first();
-                $firstPurchase->sendNotification('confirmed');
+                // Send confirmation notification to user
+                $firstPurchase->user->notify(new PurchaseNotification(
+                    'Purchase Confirmed',
+                    'Your purchase #' . $firstPurchase->transaction_id . ' has been confirmed. Please proceed with the payment.'
+                ));
             });
 
             return back()->with('success', 'Purchase confirmed successfully');
-        } catch (ModelNotFoundException $e) {
-            Log::error('Transaction not found', [
-                'transaction_id' => $transactionId,
-                'error' => $e->getMessage()
-            ]);
-            return back()->with('error', 'Transaction not found');
         } catch (\Exception $e) {
             Log::error('Failed to confirm purchase', [
                 'transaction_id' => $transactionId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
-            return back()->with('error', 'Failed to confirm purchase');
+            return back()->with('error', 'Failed to confirm purchase. Please try again.');
         }
     }
 
-    public function markAsReady($id)
+    public function markAsReady($transactionId)
     {
-        $purchase = Purchase::findOrFail($id);
-
-        \DB::transaction(function () use ($purchase) {
-            $purchase->update([
-                'ready_for_pickup' => true,
-                'pickup_ready_at' => now(),
-                'pickup_deadline' => now()->addHours(24)
-            ]);
-
-            // Send ready for pickup email
-            try {
-                $purchase->sendNotification('ready');
-            } catch (\Exception $e) {
-                Log::error('Failed to send notification: ' . $e->getMessage());
-                // Continue execution even if notification fails
+        try {
+            $purchases = Purchase::where('transaction_id', $transactionId)->get();
+            
+            if ($purchases->isEmpty()) {
+                throw new ModelNotFoundException('Transaction not found');
             }
-        });
 
-        return back()->with('success', 'Order marked as ready for pickup and customer has been notified.');
-    }
+            $firstPurchase = $purchases->first();
+            
+            // Validate purchase state
+            if ($firstPurchase->status !== 'confirmed') {
+                return back()->with('error', 'Purchase must be confirmed first');
+            }
 
-    public function markAsCompleted($id)
-    {
-        $purchase = Purchase::findOrFail($id);
+            if ($firstPurchase->payment_status !== 'verified') {
+                return back()->with('error', 'Payment must be verified before marking as ready');
+            }
 
-        if (!$purchase->ready_for_pickup) {
-            return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
-        }
+            \DB::transaction(function () use ($purchases) {
+                $now = now();
+                $deadline = $now->copy()->addHours(24);
 
-        $purchase->update([
-            'status' => 'completed',
-            'completed_at' => now()
-        ]);
+                foreach ($purchases as $purchase) {
+                    $purchase->update([
+                        'ready_for_pickup' => true,
+                        'pickup_ready_at' => $now,
+                        'pickup_deadline' => $deadline,
+                        'last_status_update' => $now
+                    ]);
 
-        return redirect()->back()->with('success', 'Purchase marked as completed.');
-    }
+                    // Log the status change
+                    Log::info('Purchase marked as ready', [
+                        'transaction_id' => $purchase->transaction_id,
+                        'purchase_id' => $purchase->id,
+                        'pickup_deadline' => $deadline
+                    ]);
+                }
 
-    public function markAsPickedUp($id)
-    {
-        $purchase = Purchase::findOrFail($id);
+                // Send ready for pickup notification
+                $firstPurchase->user->notify(new OrderReadyForPickup([
+                    'transaction_id' => $firstPurchase->transaction_id,
+                    'deadline' => $deadline->format('M d, Y h:i A'),
+                    'items' => $purchases->pluck('name')->join(', ')
+                ]));
+            });
 
-        if (!$purchase->ready_for_pickup) {
-            return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
-        }
-
-        if (!$purchase->user_pickup_verified) {
-            return redirect()->back()->with('error', 'User must verify pickup first');
-        }
-
-        \DB::transaction(function () use ($purchase) {
-            $purchase->update([
-                'admin_pickup_verified' => true,
-                'admin_verified_at' => now(),
-                'status' => 'completed',
-                'completed_at' => now(),
-                'ready_for_pickup' => false
+            return back()->with('success', 'Order marked as ready for pickup and customer has been notified.');
+        } catch (\Exception $e) {
+            Log::error('Failed to mark order as ready', [
+                'transaction_id' => $transactionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
-        });
-
-        return redirect()->back()->with('success', 'Pickup verified and order completed.');
+            return back()->with('error', 'Failed to mark order as ready. Please try again.');
+        }
     }
 
-    public function verifyPickup($id)
+    public function markAsPickedUp($transactionId)
     {
-        $purchase = Purchase::findOrFail($id);
+        try {
+            $purchases = Purchase::where('transaction_id', $transactionId)->get();
+            
+            if ($purchases->isEmpty()) {
+                throw new ModelNotFoundException('Transaction not found');
+            }
 
-        \DB::transaction(function () use ($purchase) {
-            $purchase->update([
-                'admin_pickup_verified' => true,
-                'admin_verified_at' => now(),
-                'status' => 'completed'
+            $firstPurchase = $purchases->first();
+
+            // Validate purchase state
+            if (!$firstPurchase->ready_for_pickup) {
+                return back()->with('error', 'Purchase must be ready for pickup first');
+            }
+
+            if (!$firstPurchase->user_pickup_verified) {
+                return back()->with('error', 'User must verify pickup first');
+            }
+
+            if ($firstPurchase->payment_status !== 'verified') {
+                return back()->with('error', 'Payment must be verified before completing pickup');
+            }
+
+            \DB::transaction(function () use ($purchases) {
+                $now = now();
+                foreach ($purchases as $purchase) {
+                    $purchase->update([
+                        'admin_pickup_verified' => true,
+                        'admin_verified_at' => $now,
+                        'status' => 'completed',
+                        'completed_at' => $now,
+                        'ready_for_pickup' => false,
+                        'last_status_update' => $now
+                    ]);
+
+                    // Log the completion
+                    Log::info('Purchase completed', [
+                        'transaction_id' => $purchase->transaction_id,
+                        'purchase_id' => $purchase->id,
+                        'admin_id' => auth('admin')->id()
+                    ]);
+                }
+
+                // Send completion notification
+                $firstPurchase->user->notify(new PurchaseNotification(
+                    'Purchase Completed',
+                    'Your purchase #' . $firstPurchase->transaction_id . ' has been completed. Thank you for your business!'
+                ));
+            });
+
+            return back()->with('success', 'Pickup verified and purchase completed successfully.');
+        } catch (\Exception $e) {
+            Log::error('Failed to verify pickup', [
+                'transaction_id' => $transactionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
-
-            // Send completion email
-            $purchase->sendNotification('completed');
-        });
-
-        Log::info('Admin verified pickup completion', [
-            'purchase_id' => $purchase->id,
-            'admin_id' => auth('admin')->id(),
-            'user_id' => $purchase->user_id
-        ]);
-
-        return redirect()->back()->with('success', 'Pickup verified and order completed.');
+            return back()->with('error', 'Failed to verify pickup. Please try again.');
+        }
     }
 
-    public function verifyPayment(Request $request, $id)
+    public function verifyPayment(Request $request, $transactionId)
     {
-        $purchase = Purchase::findOrFail($id);
+        try {
+            $purchases = Purchase::where('transaction_id', $transactionId)->get();
+            
+            if ($purchases->isEmpty()) {
+                throw new ModelNotFoundException('Transaction not found');
+            }
 
-        $request->validate([
-            'status' => 'required|in:verified,rejected'
-        ]);
+            $firstPurchase = $purchases->first();
+            
+            // Validate current state
+            if (!in_array($firstPurchase->status, ['confirmed', 'ready_for_pickup'])) {
+                return back()->with('error', 'Purchase must be confirmed first');
+            }
 
-        $purchase->update([
-            'payment_status' => $request->status,
-            'payment_verified_at' => now(),
-            'payment_verified_by' => Auth::guard('admin')->id()
-        ]);
+            if (!$firstPurchase->payment_proof) {
+                return back()->with('error', 'No payment proof uploaded');
+            }
 
-        return back()->with('success', 'Payment ' . $request->status . ' successfully.');
+            $status = $request->input('status', 'verified');
+            $reason = $request->input('reason');
+
+            if ($status === 'rejected' && !$reason) {
+                return back()->with('error', 'Please provide a reason for payment rejection');
+            }
+
+            \DB::transaction(function () use ($purchases, $status, $reason) {
+                $now = now();
+                foreach ($purchases as $purchase) {
+                    $updates = [
+                        'payment_status' => $status,
+                        'payment_verified_at' => $status === 'verified' ? $now : null,
+                        'payment_verified_by' => $status === 'verified' ? auth('admin')->id() : null,
+                        'last_payment_update' => $now
+                    ];
+
+                    if ($status === 'rejected') {
+                        $updates['payment_rejection_reason'] = $reason;
+                    }
+
+                    $purchase->update($updates);
+
+                    // Log the verification
+                    Log::info('Payment verification processed', [
+                        'transaction_id' => $purchase->transaction_id,
+                        'purchase_id' => $purchase->id,
+                        'status' => $status,
+                        'admin_id' => auth('admin')->id(),
+                        'reason' => $reason
+                    ]);
+                }
+
+                // Send appropriate notification
+                $firstPurchase->user->notify(new PurchaseNotification(
+                    $status === 'verified' ? 'Payment Verified' : 'Payment Rejected',
+                    $status === 'verified' 
+                        ? 'Your payment for purchase #' . $firstPurchase->transaction_id . ' has been verified.'
+                        : 'Your payment for purchase #' . $firstPurchase->transaction_id . ' has been rejected. Reason: ' . $reason
+                ));
+            });
+
+            $message = $status === 'verified' ? 'Payment verified successfully.' : 'Payment rejected successfully.';
+            return back()->with('success', $message);
+        } catch (\Exception $e) {
+            Log::error('Failed to process payment verification', [
+                'transaction_id' => $transactionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Failed to process payment verification. Please try again.');
+        }
     }
 
     protected function formatPurchase($purchase)
@@ -287,44 +392,40 @@ class AdminPurchaseController extends Controller
 
     private function calculateTimeRemaining($purchase)
     {
-        if (!$purchase->pickup_deadline || !$purchase->ready_for_pickup) {
+        if (!$purchase->pickup_deadline) {
             return null;
         }
 
+        $deadline = Carbon::parse($purchase->pickup_deadline);
         $now = now();
-        $deadline = \Carbon\Carbon::parse($purchase->pickup_deadline);
 
         if ($now->isAfter($deadline)) {
             return 'Expired';
         }
 
-        $minutes = $now->diffInMinutes($deadline, false);
-        $hours = floor($minutes / 60);
-        $remainingMinutes = $minutes % 60;
-
-        return sprintf('%02d:%02d hours remaining', $hours, $remainingMinutes);
+        $diff = $now->diff($deadline);
+        if ($diff->days > 0) {
+            return $diff->days . ' days ' . $diff->h . ' hours';
+        }
+        if ($diff->h > 0) {
+            return $diff->h . ' hours ' . $diff->i . ' minutes';
+        }
+        return $diff->i . ' minutes';
     }
 
     private function cancelExpiredPickup($purchase)
     {
-        // Return medicine to inventory
-        $medicine = Medicine::find($purchase->medicine_id);
-        if ($medicine) {
-            $medicine->increment('quantity', $purchase->quantity);
-        }
-
-        // Update purchase status
         $purchase->update([
             'status' => 'cancelled',
-            'ready_for_pickup' => false,
-            'pickup_ready_at' => null,
-            'pickup_deadline' => null
+            'cancelled_at' => now(),
+            'cancellation_reason' => 'Pickup deadline expired'
         ]);
 
-        Log::info('Purchase auto-cancelled due to pickup deadline', [
-            'purchase_id' => $purchase->id,
-            'user_id' => $purchase->user_id
-        ]);
+        // Notify user about cancellation
+        $purchase->user->notify(new PurchaseNotification(
+            'Order Cancelled',
+            'Your order #' . $purchase->transaction_id . ' has been cancelled due to expired pickup deadline.'
+        ));
     }
 
     private function determineStatus($purchase)
@@ -332,18 +433,22 @@ class AdminPurchaseController extends Controller
         if ($purchase->status === 'cancelled') {
             return 'cancelled';
         }
-        if ($purchase->status === 'completed') {
+        
+        if ($purchase->admin_pickup_verified && $purchase->user_pickup_verified) {
             return 'completed';
         }
-        if ($purchase->user_pickup_verified && !$purchase->admin_pickup_verified) {
-            return 'verified';
-        }
+        
         if ($purchase->ready_for_pickup) {
-            return 'ready_for_pickup';
+            if ($purchase->user_pickup_verified && !$purchase->admin_pickup_verified) {
+                return 'verified';
+            }
+            return 'ready';
         }
+        
         if ($purchase->status === 'confirmed') {
             return 'confirmed';
         }
+        
         return 'pending';
     }
 

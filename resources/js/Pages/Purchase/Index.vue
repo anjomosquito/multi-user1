@@ -254,7 +254,7 @@ function confirmPickupVerification(purchase) {
     cancelButtonText: 'Cancel'
   }).then((result) => {
     if (result.isConfirmed) {
-      router.post(route('purchase.verify-pickup', purchase.id), {}, {
+      router.post(route('purchase.verify-pickup', purchase.transaction_id), {}, {
         onSuccess: () => {
           Swal.fire({
             title: 'Pickup Verified!',
@@ -262,6 +262,14 @@ function confirmPickupVerification(purchase) {
             icon: 'success',
             timer: 2000,
             showConfirmButton: false
+          });
+        },
+        onError: (errors) => {
+          Swal.fire({
+            title: 'Error',
+            text: errors.message || 'Failed to verify pickup. Please try again.',
+            icon: 'error',
+            confirmButtonText: 'OK'
           });
         }
       });
@@ -272,32 +280,77 @@ function confirmPickupVerification(purchase) {
 const handleFileUpload = async (file, transactionId) => {
   if (!file) return;
 
+  // Check file size (max 2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    Swal.fire({
+      title: 'Error!',
+      text: 'File size must be less than 2MB',
+      icon: 'error',
+      confirmButtonText: 'OK'
+    });
+    return;
+  }
+
+  // Check file type
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+  if (!allowedTypes.includes(file.type)) {
+    Swal.fire({
+      title: 'Error!',
+      text: 'Only JPG, JPEG, and PNG files are allowed',
+      icon: 'error',
+      confirmButtonText: 'OK'
+    });
+    return;
+  }
+
+  // Show loading state
+  const loadingAlert = Swal.fire({
+    title: 'Uploading...',
+    text: 'Please wait while we upload your payment proof',
+    allowOutsideClick: false,
+    showConfirmButton: false,
+    willOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
   const formData = new FormData();
   formData.append('payment_proof', file);
-  formData.append('transaction_id', transactionId);
 
   try {
-    await router.post(route('purchase.upload-payment-proof'), formData, {
+    await router.post(route('purchase.upload-payment-proof', transactionId), formData, {
+      preserveScroll: true,
+      onBefore: () => {
+        // Additional pre-upload logic if needed
+      },
       onSuccess: () => {
+        loadingAlert.close();
         Swal.fire({
           title: 'Success!',
-          text: 'Payment proof uploaded successfully.',
+          text: 'Payment proof uploaded successfully. Please wait for admin verification.',
           icon: 'success',
-          timer: 2000,
+          timer: 3000,
           showConfirmButton: false
         });
       },
       onError: (errors) => {
+        loadingAlert.close();
         console.error('Upload error:', errors);
         Swal.fire({
           title: 'Error!',
-          text: errors.payment_proof || Object.values(errors)[0] || 'Failed to upload payment proof.',
+          text: errors.payment_proof || 
+                Object.values(errors)[0] || 
+                'Failed to upload payment proof. Please try again.',
           icon: 'error',
           confirmButtonText: 'OK'
         });
+      },
+      onFinish: () => {
+        // Additional cleanup if needed
       }
     });
   } catch (error) {
+    loadingAlert.close();
     console.error('Unexpected error:', error);
     Swal.fire({
       title: 'Error!',

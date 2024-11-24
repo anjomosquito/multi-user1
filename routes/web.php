@@ -154,6 +154,8 @@ Route::middleware(['auth'])->group(function () {
 Route::get('/purchase/index', [PurchaseController::class, 'index'])->name('purchase.index');
 Route::post('/purchase/order', [PurchaseController::class, 'store'])->name('purchase.store');
 Route::delete('/purchase/cancel/{id}', [PurchaseController::class, 'cancel'])->name('purchase.cancel');
+Route::post('/purchase/{transaction_id}/upload-payment-proof', [PurchaseController::class, 'uploadPaymentProof'])
+    ->name('purchase.upload-payment-proof');
 
 //Purchase ADMIN
 Route::get('admin/purchase/index', [AdminPurchaseController::class, 'index'])->name('admin.purchase.index');
@@ -168,7 +170,7 @@ Route::middleware(['auth:admin'])->group(function () {
 
 // User routes
 Route::middleware(['auth'])->group(function () {
-    Route::post('/purchase/{id}/verify-pickup', [PurchaseController::class, 'verifyPickup'])
+    Route::post('/purchase/{transaction_id}/verify-pickup', [PurchaseController::class, 'verifyPickup'])
         ->name('purchase.verify-pickup');
     Route::post('/purchase/{id}/upload-payment', [PurchaseController::class, 'uploadPaymentProof'])
         ->name('purchase.upload-payment');

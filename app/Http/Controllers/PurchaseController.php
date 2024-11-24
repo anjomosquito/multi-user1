@@ -132,35 +132,97 @@ class PurchaseController extends Controller
         return back()->with('success', 'Purchase cancelled successfully.');
     }
 
-    public function verifyPickup($id)
+    public function verifyPickup($transactionId)
     {
-        $purchase = Purchase::where('user_id', Auth::id())->findOrFail($id);
+        try {
+            // Find all purchases in the transaction
+            $purchases = Purchase::where('transaction_id', $transactionId)
+                ->where('user_id', Auth::id())
+                ->get();
 
-        if (!$purchase->ready_for_pickup) {
-            return redirect()->back()->with('error', 'Purchase must be ready for pickup first');
-        }
-
-        \DB::transaction(function () use ($purchase) {
-            $purchase->update([
-                'user_pickup_verified' => true,
-                'user_verified_at' => now()
-            ]);
-
-            // Check if admin has already verified
-            if ($purchase->admin_pickup_verified) {
-                $purchase->update([
-                    'status' => 'completed',
-                    'completed_at' => now(),
-                    'ready_for_pickup' => false
-                ]);
+            if ($purchases->isEmpty()) {
+                return back()->with('error', 'Transaction not found.');
             }
-        });
 
-        if ($purchase->admin_pickup_verified) {
-            return redirect()->back()->with('success', 'Pickup verified and order completed.');
+            $firstPurchase = $purchases->first();
+
+            // Validate purchase state
+            if (!$firstPurchase->ready_for_pickup) {
+                return back()->with('error', 'Purchase is not ready for pickup yet.');
+            }
+
+            if ($firstPurchase->user_pickup_verified) {
+                return back()->with('error', 'You have already verified this pickup.');
+            }
+
+            if ($firstPurchase->payment_status !== 'verified') {
+                return back()->with('error', 'Payment must be verified before pickup.');
+            }
+
+            // Check if pickup deadline has passed
+            $deadline = Carbon::parse($firstPurchase->pickup_deadline);
+            if ($deadline && now()->isAfter($deadline)) {
+                return back()->with('error', 'Pickup deadline has passed. Please contact admin for assistance.');
+            }
+
+            \DB::transaction(function () use ($purchases) {
+                $now = now();
+
+                foreach ($purchases as $purchase) {
+                    $updates = [
+                        'user_pickup_verified' => true,
+                        'user_verified_at' => $now,
+                        'last_status_update' => $now
+                    ];
+
+                    // If admin has already verified, complete the purchase
+                    if ($purchase->admin_pickup_verified) {
+                        $updates = array_merge($updates, [
+                            'status' => 'completed',
+                            'completed_at' => $now,
+                            'ready_for_pickup' => false
+                        ]);
+                    }
+
+                    $purchase->update($updates);
+
+                    // Log the verification
+                    \Log::info('User verified pickup', [
+                        'transaction_id' => $purchase->transaction_id,
+                        'purchase_id' => $purchase->id,
+                        'user_id' => Auth::id(),
+                        'admin_verified' => $purchase->admin_pickup_verified
+                    ]);
+                }
+
+                // Send notification to admin about user pickup verification
+                $adminNotification = new \App\Notifications\AdminNotification(
+                    'User Pickup Verification',
+                    'User has verified pickup for transaction #' . $purchases->first()->transaction_id,
+                    route('admin.purchase.show', $purchases->first()->id)
+                );
+                
+                // Notify all admins
+                \App\Models\Admin::all()->each(function ($admin) use ($adminNotification) {
+                    $admin->notify($adminNotification);
+                });
+            });
+
+            $message = $firstPurchase->admin_pickup_verified 
+                ? 'Pickup verified and order completed successfully.'
+                : 'Pickup verified successfully. Waiting for admin verification.';
+
+            return back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to verify pickup', [
+                'transaction_id' => $transactionId,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Failed to verify pickup. Please try again.');
         }
-
-        return redirect()->back()->with('success', 'Pickup verified. Waiting for admin verification.');
     }
 
     private function calculateTimeRemaining($purchase)
@@ -183,28 +245,118 @@ class PurchaseController extends Controller
         return sprintf('%02d:%02d hours remaining', $hours, $remainingMinutes);
     }
 
-    public function uploadPaymentProof(Request $request, $id)
+    public function uploadPaymentProof(Request $request, $transactionId)
     {
-        $request->validate([
-            'payment_proof' => 'required|image|max:2048|mimes:jpeg,png,jpg'
-        ]);
+        try {
+            // Validate request
+            $request->validate([
+                'payment_proof' => [
+                    'required',
+                    'image',
+                    'max:2048', // 2MB max
+                    'mimes:jpeg,png,jpg',
+                    'dimensions:min_width=200,min_height=200' // Ensure minimum image quality
+                ]
+            ], [
+                'payment_proof.max' => 'The payment proof must not be larger than 2MB.',
+                'payment_proof.mimes' => 'The payment proof must be a JPEG, PNG, or JPG image.',
+                'payment_proof.dimensions' => 'The payment proof must be at least 200x200 pixels.'
+            ]);
 
-        $purchase = Purchase::where('user_id', Auth::id())->findOrFail($id);
+            // Find all purchases in the transaction
+            $purchases = Purchase::where('transaction_id', $transactionId)
+                ->where('user_id', Auth::id())
+                ->get();
 
-        if ($purchase->payment_proof) {
-            // Delete old payment proof if exists
-            Storage::disk('public')->delete($purchase->payment_proof);
+            if ($purchases->isEmpty()) {
+                \Log::warning('Attempted to upload payment proof for non-existent transaction', [
+                    'transaction_id' => $transactionId,
+                    'user_id' => Auth::id()
+                ]);
+                return back()->with('error', 'Transaction not found.');
+            }
+
+            // Check if payment proof can be uploaded
+            $firstPurchase = $purchases->first();
+            if (!in_array($firstPurchase->status, ['confirmed', 'ready_for_pickup'])) {
+                \Log::warning('Attempted to upload payment proof for invalid purchase status', [
+                    'transaction_id' => $transactionId,
+                    'status' => $firstPurchase->status
+                ]);
+                return back()->with('error', 'Payment proof can only be uploaded for confirmed or ready purchases.');
+            }
+
+            if ($firstPurchase->payment_status === 'verified') {
+                \Log::info('Attempted to upload payment proof for already verified payment', [
+                    'transaction_id' => $transactionId
+                ]);
+                return back()->with('error', 'Payment has already been verified.');
+            }
+
+            DB::transaction(function () use ($request, $purchases, $transactionId) {
+                $file = $request->file('payment_proof');
+                
+                // Generate a unique filename with timestamp and random string
+                $filename = 'payment_' . $transactionId . '_' . time() . '_' . uniqid() . '.' . 
+                    $file->getClientOriginalExtension();
+
+                try {
+                    // Store the new payment proof in public disk
+                    $path = $file->storeAs('payment_proofs', $filename, 'public');
+                    
+                    // Ensure file was stored successfully
+                    if (!Storage::disk('public')->exists($path)) {
+                        throw new \Exception('Failed to store payment proof file.');
+                    }
+
+                    // Delete old payment proof if exists
+                    $oldProof = $purchases->first()->payment_proof;
+                    if ($oldProof && Storage::disk('public')->exists($oldProof)) {
+                        Storage::disk('public')->delete($oldProof);
+                    }
+
+                    // Update all purchases in the transaction
+                    foreach ($purchases as $purchase) {
+                        $purchase->update([
+                            'payment_proof' => $path,
+                            'payment_proof_url' => Storage::disk('public')->url($path),
+                            'payment_status' => 'pending',
+                            'payment_uploaded_at' => now(),
+                            'last_payment_update' => now()
+                        ]);
+                    }
+
+                    \Log::info('Payment proof uploaded successfully', [
+                        'transaction_id' => $transactionId,
+                        'file_path' => $path
+                    ]);
+
+                } catch (\Exception $e) {
+                    // Clean up the uploaded file if it exists
+                    if (isset($path) && Storage::disk('public')->exists($path)) {
+                        Storage::disk('public')->delete($path);
+                    }
+                    throw $e;
+                }
+            });
+
+            return back()->with('success', 'Payment proof uploaded successfully. Please wait for admin verification.');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::notice('Payment proof validation failed', [
+                'transaction_id' => $transactionId,
+                'errors' => $e->errors()
+            ]);
+            return back()->withErrors($e->errors())->withInput();
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to upload payment proof', [
+                'transaction_id' => $transactionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Failed to upload payment proof. Please try again.');
         }
-
-        // Store the new payment proof in public disk
-        $path = $request->file('payment_proof')->store('payment_proofs', 'public');
-
-        $purchase->update([
-            'payment_proof' => $path,
-            'payment_status' => Purchase::PAYMENT_STATUS_PENDING
-        ]);
-
-        return back()->with('success', 'Payment proof uploaded successfully.');
     }
 
     public function generatePurchaseReport(Purchase $purchase)
