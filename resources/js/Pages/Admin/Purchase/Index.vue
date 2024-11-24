@@ -45,74 +45,85 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction No</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Medicine</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Amount</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pickup Status</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr v-for="purchase in purchases" :key="purchase.id" class="hover:bg-gray-50">
+            <tr v-for="purchase in purchases" :key="purchase.transaction_id" class="hover:bg-gray-50">
               <td class="px-6 py-4">{{ purchase.transaction_number }}</td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="text-sm font-medium text-gray-900">
                   {{ purchase.user?.name || 'Unknown User' }}
                 </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">{{ purchase.name }}</div>
-                <div class="text-sm text-gray-500">{{ purchase.dosage }}</div>
+              <td class="px-6 py-4">
+                <div v-for="item in purchase.items" :key="item.id" class="mb-2">
+                  {{ item.name }} ({{ item.quantity }}x) - ₱{{ item.total_amount }}
+                </div>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ purchase.quantity }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                ₱{{ purchase.total_amount }}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
+              <td class="px-6 py-4">₱{{ purchase.total_amount }}</td>
+              <td class="px-6 py-4">
                 <span :class="{
-                  'px-2 py-1 rounded-full text-xs font-medium': true,
+                  'px-2 py-1 rounded text-xs font-medium': true,
                   'bg-yellow-100 text-yellow-800': purchase.status === 'pending',
                   'bg-blue-100 text-blue-800': purchase.status === 'confirmed',
-                  'bg-purple-100 text-purple-800': purchase.status === 'verified',
                   'bg-green-400 text-black-800': purchase.status === 'completed',
                   'bg-red-100 text-red-800': purchase.status === 'cancelled'
                 }">
                   {{ formatStatus(purchase.status) }}
                 </span>
-                <div v-if="purchase.status === 'rejected' || purchase.status === 'completed'" class="mt-2">
-                  <button @click="viewReceipt(purchase)"
-                    class="w-full text-green-600 hover:text-green-900 bg-green-100 px-3 py-1 rounded-full">
-                    View Receipt
-                  </button>
-
+              </td>
+              <td class="px-6 py-4">
+                <div v-if="purchase.user_pickup_verified && purchase.admin_pickup_verified"
+                  class="text-green-600 text-sm font-medium">
+                  Done
                 </div>
+                <div v-else-if="purchase.ready_for_pickup" class="space-y-2">
+                  <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium block">
+                    Ready for Pickup
+                  </span>
+                  <template v-if="purchase.pickup_deadline">
+                    <p class="text-xs text-gray-500">
+                      Pickup Before: {{ new Date(purchase.pickup_deadline).toLocaleString() }}
+                    </p>
+                    <p class="text-xs font-medium" :class="{
+                      'text-red-600': purchase.time_remaining === 'Expired',
+                      'text-blue-600': purchase.time_remaining !== 'Expired'
+                    }">
+                      {{ purchase.time_remaining }}
+                    </p>
+                  </template>
+                </div>
+                <span v-else class="text-gray-500 text-sm">
+                  Not Ready Yet
+                </span>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {{ new Date(purchase.created_at).toLocaleDateString() }}
-              </td>
+              <td class="px-6 py-4">{{ new Date(purchase.created_at).toLocaleDateString() }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-y-2">
                 <!-- Confirm button for pending purchases -->
-                <button v-if="purchase.status === 'pending'" @click="confirmPurchase(purchase.id)"
-                  :disabled="isLoading(purchase.id)"
+                <button v-if="purchase.status === 'pending'" @click="confirmPurchase(purchase.transaction_id)"
+                  :disabled="isLoading(purchase.transaction_id)"
                   class="w-full text-blue-600 hover:text-blue-900 bg-blue-100 px-3 py-1 rounded-full">
-                  {{ isLoading(purchase.id) ? 'Processing...' : 'Confirm Purchase' }}
+                  {{ isLoading(purchase.transaction_id) ? 'Processing...' : 'Confirm Purchase' }}
                 </button>
 
                 <!-- Mark as Ready button for confirmed purchases -->
-                <button v-if="purchase.status === 'confirmed'" @click="markAsReady(purchase.id)"
-                  :disabled="isLoading(purchase.id)"
+                <button v-if="purchase.status === 'confirmed'" @click="markAsReady(purchase.transaction_id)"
+                  :disabled="isLoading(purchase.transaction_id)"
                   class="w-full text-green-600 hover:text-green-900 bg-green-100 px-3 py-1 rounded-full">
-                  {{ isLoading(purchase.id) ? 'Processing...' : 'Mark Ready for Pickup' }}
+                  {{ isLoading(purchase.transaction_id) ? 'Processing...' : 'Mark Ready for Pickup' }}
                 </button>
 
                 <!-- Complete Verification button when user has verified -->
-                <button v-if="purchase.status === 'verified'" @click="verifyPickup(purchase.id)"
-                  :disabled="isLoading(purchase.id)"
+                <button v-if="purchase.status === 'verified'" @click="verifyPickup(purchase.transaction_id)"
+                  :disabled="isLoading(purchase.transaction_id)"
                   class="w-full text-purple-600 hover:text-purple-900 bg-purple-100 px-3 py-1 rounded-full">
-                  {{ isLoading(purchase.id) ? 'Processing...' : 'Complete Verification' }}
+                  {{ isLoading(purchase.transaction_id) ? 'Processing...' : 'Complete Verification' }}
                 </button>
 
                 <!-- Status messages -->
@@ -166,11 +177,11 @@
 
                   <!-- Verification Buttons -->
                   <div v-if="purchase.payment_status === 'pending'" class="flex space-x-2">
-                    <button @click="verifyPayment(purchase.id, 'verified')"
+                    <button @click="verifyPayment(purchase.transaction_id, 'verified')"
                       class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm">
                       Verify Payment
                     </button>
-                    <button @click="verifyPayment(purchase.id, 'rejected')"
+                    <button @click="verifyPayment(purchase.transaction_id, 'rejected')"
                       class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm">
                       Reject Payment
                     </button>
@@ -296,7 +307,7 @@ function isLoading(id) {
   return loadingStates.value.has(id);
 }
 
-function confirmPurchase(purchaseId) {
+function confirmPurchase(transactionId) {
   Swal.fire({
     title: 'Confirm Purchase',
     text: 'Are you sure you want to confirm this purchase?',
@@ -306,15 +317,15 @@ function confirmPurchase(purchaseId) {
     cancelButtonText: 'Cancel'
   }).then((result) => {
     if (result.isConfirmed) {
-      setLoading(purchaseId, true);
-      router.post(route('admin.purchase.confirm', purchaseId), {}, {
+      setLoading(transactionId, true);
+      router.post(route('admin.purchase.confirm', transactionId), {}, {
         preserveScroll: true,
         onSuccess: () => {
-          setLoading(purchaseId, false);
+          setLoading(transactionId, false);
           Swal.fire('Confirmed!', 'Purchase has been confirmed.', 'success');
         },
         onError: () => {
-          setLoading(purchaseId, false);
+          setLoading(transactionId, false);
           Swal.fire('Error!', 'Failed to confirm purchase.', 'error');
         }
       });
@@ -322,7 +333,7 @@ function confirmPurchase(purchaseId) {
   });
 }
 
-function markAsReady(purchaseId) {
+function markAsReady(transactionId) {
   Swal.fire({
     title: 'Mark as Ready',
     text: 'Mark this purchase as ready for pickup?',
@@ -332,15 +343,15 @@ function markAsReady(purchaseId) {
     cancelButtonText: 'Cancel'
   }).then((result) => {
     if (result.isConfirmed) {
-      setLoading(purchaseId, true);
-      router.post(route('admin.purchase.ready', purchaseId), {}, {
+      setLoading(transactionId, true);
+      router.post(route('admin.purchase.ready', transactionId), {}, {
         preserveScroll: true,
         onSuccess: () => {
-          setLoading(purchaseId, false);
+          setLoading(transactionId, false);
           Swal.fire('Ready!', 'Purchase marked as ready for pickup.', 'success');
         },
         onError: () => {
-          setLoading(purchaseId, false);
+          setLoading(transactionId, false);
           Swal.fire('Error!', 'Failed to mark as ready.', 'error');
         }
       });
@@ -348,7 +359,7 @@ function markAsReady(purchaseId) {
   });
 }
 
-function verifyPickup(purchaseId) {
+function verifyPickup(transactionId) {
   Swal.fire({
     title: 'Complete Verification',
     text: 'Confirm that you have verified the user pickup?',
@@ -358,15 +369,15 @@ function verifyPickup(purchaseId) {
     cancelButtonText: 'Cancel'
   }).then((result) => {
     if (result.isConfirmed) {
-      setLoading(purchaseId, true);
-      router.post(route('admin.purchase.verify-pickup', purchaseId), {}, {
+      setLoading(transactionId, true);
+      router.post(route('admin.purchase.verify-pickup', transactionId), {}, {
         preserveScroll: true,
         onSuccess: () => {
-          setLoading(purchaseId, false);
+          setLoading(transactionId, false);
           Swal.fire('Completed!', 'Purchase has been verified and completed.', 'success');
         },
         onError: () => {
-          setLoading(purchaseId, false);
+          setLoading(transactionId, false);
           Swal.fire('Error!', 'Failed to complete verification.', 'error');
         }
       });
@@ -393,7 +404,7 @@ function formatStatus(status) {
   }
 }
 
-function verifyPayment(purchaseId, status) {
+function verifyPayment(transactionId, status) {
   const action = status === 'verified' ? 'verify' : 'reject';
 
   Swal.fire({
@@ -406,7 +417,7 @@ function verifyPayment(purchaseId, status) {
     confirmButtonColor: status === 'verified' ? '#10B981' : '#EF4444',
   }).then((result) => {
     if (result.isConfirmed) {
-      router.post(route('admin.purchase.verify-payment', purchaseId), {
+      router.post(route('admin.purchase.verify-payment', transactionId), {
         status: status
       }, {
         preserveScroll: true,

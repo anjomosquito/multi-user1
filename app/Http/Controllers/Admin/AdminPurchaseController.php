@@ -42,42 +42,51 @@ class AdminPurchaseController extends Controller
         $purchases = Purchase::with('user')
             ->latest()
             ->get()
-            ->map(function ($purchase) {
-                $pickup_deadline = $purchase->pickup_deadline ? \Carbon\Carbon::parse($purchase->pickup_deadline) : null;
+            ->groupBy('transaction_id')
+            ->map(function ($group) {
+                $firstPurchase = $group->first();
+                $pickup_deadline = $firstPurchase->pickup_deadline ? \Carbon\Carbon::parse($firstPurchase->pickup_deadline) : null;
                 $now = now();
 
                 // Auto cancel if past deadline
-                if ($pickup_deadline && $now->isAfter($pickup_deadline) && $purchase->ready_for_pickup) {
-                    $this->cancelExpiredPickup($purchase);
-                    $purchase->refresh();
+                if ($pickup_deadline && $now->isAfter($pickup_deadline) && $firstPurchase->ready_for_pickup) {
+                    $this->cancelExpiredPickup($firstPurchase);
+                    $firstPurchase->refresh();
                 }
 
                 return [
-                    'id' => $purchase->id,
-                    'user' => $purchase->user ? [
-                        'id' => $purchase->user->id,
-                        'name' => $purchase->user->name,
+                    'transaction_id' => $firstPurchase->transaction_id,
+                    'transaction_number' => str_pad($firstPurchase->id, 5, '0', STR_PAD_LEFT),
+                    'created_at' => $firstPurchase->created_at,
+                    'status' => $this->determineStatus($firstPurchase),
+                    'ready_for_pickup' => $firstPurchase->ready_for_pickup,
+                    'pickup_ready_at' => $firstPurchase->pickup_ready_at,
+                    'pickup_deadline' => $firstPurchase->pickup_deadline,
+                    'admin_pickup_verified' => $firstPurchase->admin_pickup_verified,
+                    'user_pickup_verified' => $firstPurchase->user_pickup_verified,
+                    'time_remaining' => $this->calculateTimeRemaining($firstPurchase),
+                    'payment_proof' => $firstPurchase->payment_proof,
+                    'payment_proof_url' => $firstPurchase->payment_proof_url,
+                    'payment_status' => $firstPurchase->payment_status,
+                    'user' => $firstPurchase->user ? [
+                        'id' => $firstPurchase->user->id,
+                        'name' => $firstPurchase->user->name,
                     ] : null,
-                    'name' => $purchase->name,
-                    'quantity' => $purchase->quantity,
-                    'dosage' => $purchase->dosage,
-                    'total_amount' => $purchase->mprice * $purchase->quantity,
-                    'status' => $this->determineStatus($purchase),
-                    'transaction_number' => str_pad($purchase->id, 5, '0', STR_PAD_LEFT),
-                    'ready_for_pickup' => $purchase->ready_for_pickup,
-                    'pickup_ready_at' => $purchase->pickup_ready_at,
-                    'pickup_deadline' => $purchase->pickup_deadline,
-                    'time_remaining' => $this->calculateTimeRemaining($purchase),
-                    'created_at' => $purchase->created_at,
-                    'admin_pickup_verified' => $purchase->admin_pickup_verified,
-                    'user_pickup_verified' => $purchase->user_pickup_verified,
-                    'verification_status' => $this->getVerificationStatus($purchase),
-                    'payment_proof' => $purchase->payment_proof,
-                    'payment_proof_url' => $purchase->payment_proof_url,
-                    'payment_status' => $purchase->payment_status,
-                    'payment_verified_at' => $purchase->payment_verified_at,
+                    'items' => $group->map(function ($purchase) {
+                        return [
+                            'id' => $purchase->id,
+                            'name' => $purchase->name,
+                            'quantity' => $purchase->quantity,
+                            'mprice' => $purchase->mprice,
+                            'total_amount' => $purchase->mprice * $purchase->quantity,
+                            'dosage' => $purchase->dosage,
+                        ];
+                    })->values(),
+                    'total_amount' => $group->sum(function ($purchase) {
+                        return $purchase->mprice * $purchase->quantity;
+                    })
                 ];
-            });
+            })->values();
 
         return Inertia::render('Admin/Purchase/Index', [
             'purchases' => $purchases
@@ -112,26 +121,39 @@ class AdminPurchaseController extends Controller
         ]);
     }
 
-    public function confirm($id)
+    public function confirm($transactionId)
     {
         try {
-            $purchase = Purchase::findOrFail($id);
+            $purchases = Purchase::where('transaction_id', $transactionId)->get();
+            
+            if ($purchases->isEmpty()) {
+                throw new ModelNotFoundException('Transaction not found');
+            }
 
-            \DB::transaction(function () use ($purchase) {
-                $purchase->update([
-                    'status' => 'confirmed',
-                    'confirmed_at' => now(),
-                    'confirmed_by' => auth('admin')->id()
-                ]);
+            \DB::transaction(function () use ($purchases) {
+                foreach ($purchases as $purchase) {
+                    $purchase->update([
+                        'status' => 'confirmed',
+                        'confirmed_at' => now(),
+                        'confirmed_by' => auth('admin')->id()
+                    ]);
+                }
 
-                // Send confirmation email using user's email
-                $purchase->sendNotification('confirmed');
+                // Send confirmation email using the first purchase's user email
+                $firstPurchase = $purchases->first();
+                $firstPurchase->sendNotification('confirmed');
             });
 
             return back()->with('success', 'Purchase confirmed successfully');
+        } catch (ModelNotFoundException $e) {
+            Log::error('Transaction not found', [
+                'transaction_id' => $transactionId,
+                'error' => $e->getMessage()
+            ]);
+            return back()->with('error', 'Transaction not found');
         } catch (\Exception $e) {
             Log::error('Failed to confirm purchase', [
-                'purchase_id' => $id,
+                'transaction_id' => $transactionId,
                 'error' => $e->getMessage()
             ]);
             return back()->with('error', 'Failed to confirm purchase');

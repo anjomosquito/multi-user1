@@ -103,13 +103,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         
         // Purchase Routes
         Route::get('/purchase/index', [AdminPurchaseController::class, 'index'])->name('purchase.index');
-        Route::get('/purchase/{id}', [AdminPurchaseController::class, 'show'])->name('purchase.show');
-        Route::post('/purchase/{id}/mark-ready', [AdminPurchaseController::class, 'markAsReady'])->name('purchase.mark-ready');
-        Route::post('/purchase/{id}/confirm', [AdminPurchaseController::class, 'confirm'])->name('purchase.confirm');
-        Route::post('/purchase/{id}/ready', [AdminPurchaseController::class, 'markAsReady'])->name('purchase.ready');
-        Route::post('/purchase/{id}/complete', [AdminPurchaseController::class, 'markAsCompleted'])->name('purchase.complete');
-        Route::post('/purchase/{id}/verify-pickup', [AdminPurchaseController::class, 'markAsPickedUp'])->name('purchase.verify-pickup');
-        Route::post('/purchase/{id}/verify-payment', [AdminPurchaseController::class, 'verifyPayment'])->name('purchase.verify-payment');
+        Route::get('/purchase/{transaction_id}', [AdminPurchaseController::class, 'show'])->name('purchase.show');
+        Route::post('/purchase/{transaction_id}/mark-ready', [AdminPurchaseController::class, 'markAsReady'])->name('purchase.mark-ready');
+        Route::post('/purchase/{transaction_id}/confirm', [AdminPurchaseController::class, 'confirm'])->name('purchase.confirm');
+        Route::post('/purchase/{transaction_id}/ready', [AdminPurchaseController::class, 'markAsReady'])->name('purchase.ready');
+        Route::post('/purchase/{transaction_id}/complete', [AdminPurchaseController::class, 'markAsCompleted'])->name('purchase.complete');
+        Route::post('/purchase/{transaction_id}/verify-pickup', [AdminPurchaseController::class, 'markAsPickedUp'])->name('purchase.verify-pickup');
+        Route::post('/purchase/{transaction_id}/verify-payment', [AdminPurchaseController::class, 'verifyPayment'])->name('purchase.verify-payment');
         Route::get('/purchase/{purchase}/report', [AdminPurchaseController::class, 'generatePurchaseReport'])->name('purchase.report');
         
         // Announcement Routes
