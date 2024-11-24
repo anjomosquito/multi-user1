@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Medicine;
 use App\Models\Purchase;
+use App\Models\Announcement;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
@@ -101,15 +102,21 @@ class InventoryController extends Controller
             ->selectRaw('SUM(mprice * quantity) as total_spent')
             ->value('total_spent') ?? 0;
 
+        // Get latest announcements
+        $announcements = Announcement::with('admin')
+            ->published()
+            ->recent()
+            ->take(4)
+            ->get();
+
         return Inertia::render('Dashboard', [
             'medicineCount' => $medicineCount,
             'purchaseCount' => $purchaseCount,
             'recentPurchases' => $recentPurchases,
             'totalSpent' => $totalSpent,
             'availableMedicines' => $availableMedicines,
-            'promoMedicines' => $promoMedicines
+            'promoMedicines' => $promoMedicines,
+            'announcements' => $announcements
         ]);
     }
-
-
 }

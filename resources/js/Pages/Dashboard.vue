@@ -162,22 +162,24 @@ const spendingChart = {
                                     View All →
                                 </Link>
                             </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div v-if="announcements && announcements.length > 0">
-                                    <div v-for="announcement in announcements" :key="announcement.id"
-                                        class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                                        <Link :href="route('announcements.show', announcement.id)">
-                                            <h4 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100">{{ announcement.title }}</h4>
-                                            <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">{{ announcement.content }}</p>
-                                            <div class="flex justify-between items-center text-xs text-gray-500">
-                                                <span>By {{ announcement.admin?.name || 'Unknown' }}</span>
-                                                <span>{{ new Date(announcement.published_at).toLocaleDateString() }}</span>
-                                            </div>
-                                        </Link>
+                            <div class="h-64 overflow-y-auto">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div v-if="announcements && announcements.length > 0">
+                                        <div v-for="announcement in announcements" :key="announcement.id"
+                                            class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                                            <Link :href="route('announcements.show', announcement.id)">
+                                                <h4 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100">{{ announcement.title }}</h4>
+                                                <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">{{ announcement.content }}</p>
+                                                <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                                                    <span>By {{ announcement.admin?.name || 'Unknown' }}</span>
+                                                    <span>{{ new Date(announcement.published_at).toLocaleDateString() }}</span>
+                                                </div>
+                                            </Link>
+                                        </div>
                                     </div>
-                                </div>
-                                <div v-else class="text-gray-500 dark:text-gray-400 text-center py-4">
-                                    No announcements available.
+                                    <div v-else class="text-gray-500 dark:text-gray-400 text-center py-4">
+                                        No announcements available.
+                                    </div>
                                 </div>
                             </div>
                         </div>

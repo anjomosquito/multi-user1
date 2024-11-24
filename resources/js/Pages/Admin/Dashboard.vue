@@ -64,7 +64,11 @@ const props = defineProps({
         default: () => ({
             query: ''
         })
-    }
+    },
+    announcements: {
+        type: Array,
+        default: () => []
+    },
 });
 
 const searchQuery = ref(props.filters.query || '');
@@ -457,7 +461,7 @@ const searchSuggestions = computed(() => {
                                         </div>
                                         <div class="p-3 bg-blue-100 rounded-full">
                                             <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-9 0a2 2 0 012-2v-6a2 2 0 012-2v6a2 2 0 012 2m9 0h1m-1 0h1m-1 0h1m1 0h1m-1 0h-1m-1 0a2 2 0 01-2-2V5a2 2 0 00-2-2H3a2 2 0 00-2 2v12a2 2 0 002 2 18h15a2 2 0 002-2v-5" />
                                             </svg>
                                         </div>
                                     </div>
@@ -550,41 +554,25 @@ const searchSuggestions = computed(() => {
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-lg font-semibold">Recent Announcements</h3>
                                     <Link :href="route('admin.announcements.index')" class="text-blue-500 hover:text-blue-700 text-sm">
-                                        Manage →
+                                        View All →
                                     </Link>
                                 </div>
-                                <div class="space-y-4 overflow-y-auto max-h-[400px] custom-scrollbar">
-                                    <div v-for="announcement in props.recentAnnouncements" :key="announcement.id"
-                                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ announcement.title }}</h4>
-                                            <span :class="{
-                                                'px-2 py-1 rounded-full text-xs font-medium': true,
-                                                'bg-green-100 text-green-800': announcement.status === 'published',
-                                                'bg-gray-100 text-gray-800': announcement.status === 'draft'
-                                            }">
-                                                {{ announcement.status }}
-                                            </span>
-                                        </div>
-                                        <p class="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{{ announcement.content }}</p>
-                                        <div class="flex justify-between items-center mt-2 text-xs text-gray-500">
-                                            <span>{{ formatDate(announcement.created_at) }}</span>
-                                            <Link 
-                                                :href="route('admin.announcements.edit', announcement.id)"
-                                                class="text-blue-500 hover:text-blue-700"
-                                            >
-                                                Edit
+                                <div class="space-y-3 overflow-y-auto max-h-[400px] custom-scrollbar">
+                                    <div v-if="announcements && announcements.length > 0">
+                                        <div v-for="announcement in announcements" :key="announcement.id"
+                                            class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
+                                            <Link :href="route('admin.announcements.show', announcement.id)">
+                                                <h4 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100">{{ announcement.title }}</h4>
+                                                <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">{{ announcement.content }}</p>
+                                                <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                                                    <span>By {{ announcement.admin?.name || 'Unknown' }}</span>
+                                                    <span>{{ formatDate(announcement.created_at) }}</span>
+                                                </div>
                                             </Link>
                                         </div>
                                     </div>
-                                    <div v-if="!props.recentAnnouncements.length" class="text-center py-4 text-gray-500">
-                                        <p>No recent announcements</p>
-                                        <Link
-                                            :href="route('admin.announcements.create')"
-                                            class="text-blue-500 hover:text-blue-700 text-sm mt-2 inline-block"
-                                        >
-                                            Create New Announcement →
-                                        </Link>
+                                    <div v-else class="text-gray-500 dark:text-gray-400 text-center py-4">
+                                        No announcements available.
                                     </div>
                                 </div>
                             </div>

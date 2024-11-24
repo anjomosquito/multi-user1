@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Announcement;
 use App\Models\Medicine;
 use App\Models\Purchase;
 use App\Models\User;
@@ -65,6 +66,12 @@ class DashboardController extends Controller
                 ];
             });
 
+        // Get latest announcements
+        $announcements = Announcement::with('admin')
+            ->orderBy('created_at', 'desc')
+            ->take(4)
+            ->get();
+
         return Inertia::render('Admin/Dashboard', [
             'totalMedicines' => $totalMedicines,
             'totalPurchases' => $totalPurchases,
@@ -74,6 +81,7 @@ class DashboardController extends Controller
             'recentActivity' => $recentActivity,
             'revenueData' => $revenueData,
             'recentPurchases' => $recentPurchases,
+            'announcements' => $announcements
         ]);
     }
 
