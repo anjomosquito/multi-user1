@@ -362,7 +362,6 @@ const handleFileUpload = async (file, transactionId) => {
 };
 
 function viewReceipt(purchase) {
-  receiptUrl.value = route('purchase.receipt', { purchase_id: purchase.id });
-  showReceiptModal.value = true;
+  window.open(route('purchase.report', purchase.transaction_id), '_blank');
 }
 </script>

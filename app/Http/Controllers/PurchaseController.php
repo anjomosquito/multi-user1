@@ -359,30 +359,49 @@ class PurchaseController extends Controller
         }
     }
 
-    public function generatePurchaseReport(Purchase $purchase)
+    public function generatePurchaseReport($transactionId)
     {
-        // Ensure the user can only view their own purchase reports
-        if ($purchase->user_id !== Auth::id()) {
-            abort(403);
+        // Find all purchases in the transaction
+        $purchases = Purchase::where('transaction_id', $transactionId)
+            ->where('user_id', Auth::id())
+            ->with('user')
+            ->get();
+
+        if ($purchases->isEmpty()) {
+            abort(404, 'Transaction not found');
         }
+
+        $firstPurchase = $purchases->first();
 
         // Format the data for the report
         $reportData = [
-            'transaction_number' => str_pad($purchase->id, 5, '0', STR_PAD_LEFT),
-            'date' => Carbon::parse($purchase->created_at)->format('M d, Y h:i A'),
+            'transaction_number' => str_pad($firstPurchase->id, 5, '0', STR_PAD_LEFT),
+            'date' => Carbon::parse($firstPurchase->created_at)->format('M d, Y h:i A'),
             'customer_name' => Auth::user()->name,
-            'medicine_name' => $purchase->name,
-            'dosage' => $purchase->dosage,
-            'quantity' => $purchase->quantity,
-            'unit_price' => number_format($purchase->mprice, 2),
-            'total_amount' => number_format($purchase->quantity * $purchase->mprice, 2),
-            'status' => $purchase->status,
-            'payment_status' => $purchase->payment_status,
-            'verification_date' => $purchase->payment_verified_at ? Carbon::parse($purchase->payment_verified_at)->format('M d, Y h:i A') : 'N/A'
+            'status' => $firstPurchase->status,
+            'payment_status' => $firstPurchase->payment_status,
+            'verification_date' => $firstPurchase->payment_verified_at 
+                ? Carbon::parse($firstPurchase->payment_verified_at)->format('M d, Y h:i A') 
+                : 'N/A',
+            'items' => $purchases->map(function ($purchase) {
+                return [
+                    'medicine_name' => $purchase->name,
+                    'dosage' => $purchase->dosage,
+                    'quantity' => $purchase->quantity,
+                    'unit_price' => number_format($purchase->mprice, 2),
+                    'total_amount' => number_format($purchase->quantity * $purchase->mprice, 2),
+                ];
+            })->toArray(),
+            'total_amount' => number_format($purchases->sum(function ($purchase) {
+                return $purchase->quantity * $purchase->mprice;
+            }), 2)
         ];
 
         // Generate PDF
         $pdf = PDF::loadView('reports.purchase-receipt', ['purchase' => $reportData]);
+        
+        // Set paper size and orientation
+        $pdf->setPaper('a4', 'portrait');
         
         // Return the PDF for download or viewing
         return $pdf->stream("receipt-{$reportData['transaction_number']}.pdf");

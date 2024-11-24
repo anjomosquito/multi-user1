@@ -174,7 +174,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('purchase.verify-pickup');
     Route::post('/purchase/{id}/upload-payment', [PurchaseController::class, 'uploadPaymentProof'])
         ->name('purchase.upload-payment');
-    Route::get('/purchase/{purchase}/report', [PurchaseController::class, 'generatePurchaseReport'])
+    Route::get('/purchase/{transaction_id}/report', [PurchaseController::class, 'generatePurchaseReport'])
         ->name('purchase.report');
 });
 
