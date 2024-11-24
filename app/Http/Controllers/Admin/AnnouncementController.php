@@ -10,14 +10,31 @@ use Illuminate\Support\Facades\Auth;
 
 class AnnouncementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $announcements = Announcement::with('admin')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $query = Announcement::with('admin');
+
+        // Apply search filter
+        if ($request->has('search') && $request->search !== '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('content', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply status filter
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
+
+        $announcements = $query->orderBy('created_at', 'desc')
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Admin/Announcements/Index', [
-            'announcements' => $announcements
+            'announcements' => $announcements,
+            'filters' => $request->only(['search', 'status'])
         ]);
     }
 

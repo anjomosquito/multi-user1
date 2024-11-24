@@ -149,6 +149,7 @@ import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
 import { format } from 'date-fns';
+import { debounce } from 'lodash';
 
 const props = defineProps({
     announcements: Object,
@@ -161,21 +162,32 @@ const props = defineProps({
     },
 });
 
-const search = ref(props.filters.search);
-const status = ref(props.filters.status);
+const search = ref(props.filters.search || '');
+const status = ref(props.filters.status || '');
 const confirmingAnnouncementDeletion = ref(false);
 const announcementToDelete = ref(null);
 const processing = ref(false);
 
-function filter() {
+// Debounce the search filter
+const debouncedFilter = debounce(() => {
     router.get(
         route('admin.announcements.index'),
         { search: search.value, status: status.value },
         {
             preserveState: true,
+            preserveScroll: true,
             replace: true,
         }
     );
+}, 300);
+
+function filter() {
+    debouncedFilter();
+}
+
+function formatDate(date) {
+    if (!date) return 'N/A';
+    return format(new Date(date), 'MMM d, yyyy');
 }
 
 function confirmAnnouncementDeletion(announcement) {
@@ -183,25 +195,23 @@ function confirmAnnouncementDeletion(announcement) {
     confirmingAnnouncementDeletion.value = true;
 }
 
-function deleteAnnouncement() {
-    processing.value = true;
-    router.delete(route('admin.announcements.destroy', announcementToDelete.value.id), {
-        onSuccess: () => {
-            closeModal();
-        },
-        onFinish: () => {
-            processing.value = false;
-        }
-    });
-}
-
 function closeModal() {
     confirmingAnnouncementDeletion.value = false;
     announcementToDelete.value = null;
 }
 
-function formatDate(date) {
-    if (!date) return '';
-    return format(new Date(date), 'MMM dd, yyyy HH:mm');
+function deleteAnnouncement() {
+    if (!announcementToDelete.value) return;
+    
+    processing.value = true;
+    router.delete(route('admin.announcements.destroy', announcementToDelete.value.id), {
+        onSuccess: () => {
+            closeModal();
+            processing.value = false;
+        },
+        onError: () => {
+            processing.value = false;
+        },
+    });
 }
 </script>
