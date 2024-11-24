@@ -7,9 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 use App\Notifications\PurchaseNotification;
 use Illuminate\Support\Facades\Log;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Purchase extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'user_id',
         'medicine_id',
@@ -37,6 +41,31 @@ class Purchase extends Model
         'payment_verified_by',
         'transaction_id'
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly([
+                'quantity', 'status', 'payment_status', 
+                'ready_for_pickup', 'admin_pickup_verified', 
+                'user_pickup_verified'
+            ])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(function(string $eventName) {
+                switch ($eventName) {
+                    case 'created':
+                        return 'Purchase order has been created';
+                    case 'updated':
+                        return 'Purchase order has been updated';
+                    case 'deleted':
+                        return 'Purchase order has been cancelled';
+                    default:
+                        return "Purchase order has been {$eventName}";
+                }
+            })
+            ->useLogName('purchase')
+            ->dontSubmitEmptyLogs();
+    }
 
     // Define status constants
     public const STATUS_PENDING = 'pending';

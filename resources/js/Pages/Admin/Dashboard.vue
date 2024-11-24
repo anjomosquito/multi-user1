@@ -316,6 +316,49 @@ const searchSuggestions = computed(() => {
     )
   ].slice(0, 5);
 });
+
+// Format date to readable format
+function formatLogDate(dateString) {
+  return new Date(dateString).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// Format log name
+function formatLogName(name) {
+  if (!name) return 'System';
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
+// Format key
+function formatKey(key) {
+  return key.split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+// Format value
+function formatValue(value) {
+  if (value === null || value === undefined) return 'N/A';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'object') return JSON.stringify(value);
+  return value;
+}
+
+// Get log type class
+function getLogTypeClass(logName) {
+  const classes = {
+    announcement: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100',
+    medicine: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100',
+    purchase: 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100',
+    default: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
+  };
+  return classes[logName] || classes.default;
+}
 </script>
 
 <template>
@@ -461,7 +504,7 @@ const searchSuggestions = computed(() => {
                                         </div>
                                         <div class="p-3 bg-blue-100 rounded-full">
                                             <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-9 0a2 2 0 012-2v-6a2 2 0 012-2v6a2 2 0 012 2m9 0h1m-1 0h1m-1 0h1m1 0h1m-1 0h-1m-1 0a2 2 0 01-2-2V5a2 2 0 00-2-2H3a2 2 0 00-2 2v12a2 2 0 002 2 18h15a2 2 0 002-2v-5" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-9 0a2 2 0 012-2v-6a2 2 0 012-2v6a2 2 0 012 2m9 0h1m-1 0h1m-1 0h1m1 0h1m-1 0a2 2 0 01-2-2V5a2 2 0 00-2-2H3a2 2 0 00-2 2v12a2 2 0 002 2 18h15a2 2 0 002-2v-5" />
                                             </svg>
                                         </div>
                                     </div>
@@ -619,43 +662,7 @@ const searchSuggestions = computed(() => {
                     </div>
 
                     <!-- Recent Activity -->
-                    <div class="col-span-12 md:col-span-4">
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
-                            <div class="p-6">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-lg font-semibold">Recent Activity</h3>
-                                </div>
-                                <div class="space-y-3 overflow-y-auto max-h-[400px] custom-scrollbar">
-                                    <div v-for="activity in props.recentActivities" :key="activity.id" 
-                                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                                        <div class="flex items-start justify-between">
-                                            <div class="flex-1">
-                                                <p class="text-sm text-gray-600 dark:text-gray-300">{{ activity.description }}</p>
-                                                <div class="mt-1 flex items-center space-x-2">
-                                                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                                                        By {{ activity.causer_name }}
-                                                    </span>
-                                                    <span class="text-xs text-gray-500 dark:text-gray-400">•</span>
-                                                    <span class="text-xs text-gray-500 dark:text-gray-400">
-                                                        {{ formatDate(activity.created_at) }}
-                                                    </span>
-                                                </div>
-                                                <div v-if="activity.properties && Object.keys(activity.properties).length > 0" 
-                                                    class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                                    <div v-if="activity.properties.old_price !== undefined" class="flex space-x-2">
-                                                        <span>Price changed from ${{ activity.properties.old_price }} to ${{ activity.properties.new_price }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div v-if="!props.recentActivities.length" class="text-center text-gray-500 dark:text-gray-400 py-4">
-                                        No recent activity
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    
 
                     <!-- Expiring Medicines -->
                     <div class="col-span-12 md:col-span-4">
@@ -723,6 +730,68 @@ const searchSuggestions = computed(() => {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mt-6">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h2>
+                            <Link 
+                                :href="route('admin.activity-log.index')"
+                                class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                                View All →
+                            </Link>
+                        </div>
+                        <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
+                            <table class="w-full whitespace-nowrap">
+                                <thead class="sticky top-0 bg-white dark:bg-gray-800">
+                                    <tr class="text-left font-bold border-b dark:border-gray-700">
+                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">Description</th>
+                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">Type</th>
+                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">User</th>
+                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                    <tr v-for="activity in props.recentActivities" 
+                                        :key="activity.id" 
+                                        class="hover:bg-gray-50 dark:hover:bg-gray-700"
+                                    >
+                                        <td class="px-6 py-4">
+                                            <div class="font-medium text-gray-900 dark:text-gray-100">
+                                                {{ activity.description }}
+                                            </div>
+                                            <div v-if="activity.properties && Object.keys(activity.properties).length > 0" 
+                                                 class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                                <div v-for="(value, key) in activity.properties" :key="key">
+                                                    <strong>{{ formatKey(key) }}:</strong> {{ formatValue(value) }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <span class="px-3 py-1 rounded-full text-xs font-medium"
+                                                  :class="getLogTypeClass(activity.log_name)">
+                                                {{ formatLogName(activity.log_name) }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">
+                                            {{ activity.causer ? activity.causer.name : 'System' }}
+                                        </td>
+                                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">
+                                            {{ formatDate(activity.created_at) }}
+                                        </td>
+                                    </tr>
+                                    <tr v-if="!props.recentActivities || props.recentActivities.length === 0">
+                                        <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                                            No recent activities found.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

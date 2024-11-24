@@ -29,19 +29,10 @@ class DashboardController extends Controller
             ->get();
 
         // Get recent activity logs
-        $recentActivity = Activity::with('causer')
+        $recentActivities = Activity::with('causer')
             ->latest()
             ->take(10)
-            ->get()
-            ->map(function ($activity) {
-                return [
-                    'id' => $activity->id,
-                    'description' => $activity->description,
-                    'causer_name' => $activity->causer ? $activity->causer->name : 'System',
-                    'created_at' => $activity->created_at,
-                    'properties' => $activity->properties,
-                ];
-            });
+            ->get();
 
         // Get revenue data for chart (using mprice as the default price)
         $revenueData = Purchase::selectRaw('DATE(created_at) as date, SUM(mprice * quantity) as total')
@@ -78,7 +69,7 @@ class DashboardController extends Controller
             'totalUsers' => $totalUsers,
             'lowStockCount' => $lowStockCount,
             'expiringMedicines' => $expiringMedicines,
-            'recentActivity' => $recentActivity,
+            'recentActivities' => $recentActivities,
             'revenueData' => $revenueData,
             'recentPurchases' => $recentPurchases,
             'announcements' => $announcements

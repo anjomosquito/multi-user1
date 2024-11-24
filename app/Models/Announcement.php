@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Admin;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Announcement extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'title',
@@ -21,6 +23,16 @@ class Announcement extends Model
     protected $casts = [
         'published_at' => 'datetime',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['title', 'content', 'status', 'published_at'])
+            ->logOnlyDirty()
+            ->setDescriptionForEvent(fn(string $eventName) => "Announcement has been {$eventName}")
+            ->useLogName('announcement')
+            ->dontSubmitEmptyLogs();
+    }
 
     public function admin()
     {

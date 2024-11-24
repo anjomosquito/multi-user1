@@ -99,6 +99,9 @@ const showingNavigationDropdown = ref(false);
                                         style="font-size: 25px; width: 30px; height: 30px"></i>
                                     Purchases
                                 </NavLink>
+                                <NavLink :href="route('admin.activity-log.index')" :active="route().current('admin.activity-log.index')">
+                                        Activity Log
+                                    </NavLink>
                             </div>
                         </div>
 
