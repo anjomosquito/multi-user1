@@ -78,6 +78,13 @@ const showingNavigationDropdown = ref(false);
                                     Chat
                                 </NavLink>
 
+                                <NavLink :href="route('admin.announcements.index')"
+                                    :active="route().current('admin.announcements.index')">
+                                    <i class="fas fa-bullhorn text-yellow-500"
+                                        style="font-size: 25px; width: 30px; height: 30px"></i>
+                                    Announcements
+                                </NavLink>
+
                                 <NavLink :href="route('admin.users.index')"
                                     :active="route().current('admin.users.index')">
                                     <i class="fas fa-users text-teal-500"

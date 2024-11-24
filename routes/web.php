@@ -85,6 +85,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Category Routes
         Route::resource('categories', MedicineCategoryController::class)->except(['show']);
         
+        // Announcement Routes
+        Route::resource('announcements', AnnouncementController::class);
+        
         // Inventory Routes
         Route::get('/inventory', [AdminInventoryController::class, 'index'])->name('inventory.index');
         Route::post('/inventory', [AdminInventoryController::class, 'store'])->name('inventory.store');
@@ -111,9 +114,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/purchase/{transaction_id}/verify-pickup', [AdminPurchaseController::class, 'markAsPickedUp'])->name('purchase.verify-pickup');
         Route::post('/purchase/{transaction_id}/verify-payment', [AdminPurchaseController::class, 'verifyPayment'])->name('purchase.verify-payment');
         Route::get('/purchase/{purchase}/report', [AdminPurchaseController::class, 'generatePurchaseReport'])->name('purchase.report');
-        
-        // Announcement Routes
-        Route::resource('announcements', AnnouncementController::class);
     });
 });
 
