@@ -155,31 +155,37 @@ const spendingChart = {
                 <!-- Announcements Section -->
                 <div class="mt-6">
                     <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                        <div class="p-6">
+                        <div class="p-10">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-lg font-semibold">Latest Announcements</h3>
-                                <Link :href="route('announcements.index')" class="text-blue-500 hover:text-blue-700 text-sm">
-                                    View All →
+                                <Link :href="route('announcements.index')" 
+                                    class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 text-sm flex items-center">
+                                    <i class="fas fa-bullhorn mr-2"></i>
+                                    View All
                                 </Link>
                             </div>
-                            <div class="h-64 overflow-y-auto">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div v-if="announcements && announcements.length > 0">
-                                        <div v-for="announcement in announcements" :key="announcement.id"
-                                            class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                                            <Link :href="route('announcements.show', announcement.id)">
-                                                <h4 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100">{{ announcement.title }}</h4>
-                                                <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">{{ announcement.content }}</p>
-                                                <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                                                    <span>By {{ announcement.admin?.name || 'Unknown' }}</span>
-                                                    <span>{{ new Date(announcement.published_at).toLocaleDateString() }}</span>
-                                                </div>
-                                            </Link>
-                                        </div>
+                            <div class="space-y-4 h-64 overflow-y-auto">
+                                <div v-if="announcements && announcements.length > 0">
+                                    <div v-for="announcement in announcements" :key="announcement.id"
+                                        class="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-700 dark:to-gray-600 hover:from-blue-100 hover:to-blue-200 dark:hover:from-gray-600 dark:hover:to-gray-500 transition-all duration-200">
+                                        <Link :href="route('announcements.show', announcement.id)" class="block">
+                                            <div class="flex justify-between items-start mb-2">
+                                                <h4 class="font-medium text-lg text-gray-900 dark:text-gray-100">{{ announcement.title }}</h4>
+                                                <span class="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded-full">
+                                                    {{ new Date(announcement.published_at).toLocaleDateString() }}
+                                                </span>
+                                            </div>
+                                            <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">{{ announcement.content }}</p>
+                                            <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                                <i class="fas fa-user-circle mr-1"></i>
+                                                <span>{{ announcement.admin?.name || 'Unknown' }}</span>
+                                            </div>
+                                        </Link>
                                     </div>
-                                    <div v-else class="text-gray-500 dark:text-gray-400 text-center py-4">
-                                        No announcements available.
-                                    </div>
+                                </div>
+                                <div v-else class="text-center py-8">
+                                    <i class="fas fa-newspaper text-gray-400 text-4xl mb-3"></i>
+                                    <p class="text-gray-500 dark:text-gray-400">No announcements available at the moment.</p>
                                 </div>
                             </div>
                         </div>
@@ -277,12 +283,20 @@ const spendingChart = {
                                     <div v-for="medicine in promoMedicines" :key="medicine.id"
                                         class="border rounded-lg p-4 bg-gradient-to-r from-yellow-50 to-yellow-100">
                                         <h4 class="font-medium">{{ medicine.name }}</h4>
+                                        <p class="text-sm text-gray-600 mt-1">{{ medicine.dosage }}</p>
                                         <div class="flex items-center mt-2">
-                                            <span class="text-gray-500 line-through text-sm">₱{{ medicine.hprice
-                                                }}</span>
+                                            <span class="text-gray-500 line-through text-sm">₱{{ medicine.hprice }}</span>
                                             <span class="text-green-600 font-bold ml-2">₱{{ medicine.mprice }}</span>
                                         </div>
                                         <p class="text-sm text-gray-500 mt-1">Stock: {{ medicine.quantity }}</p>
+                                        <p v-if="medicine.category" class="text-sm text-gray-500 mt-1">
+                                            Category: {{ medicine.category.name }}
+                                        </p>
+                                        <p class="text-sm text-gray-500 mt-1">Expiry: {{ new Date(medicine.expdate).toLocaleDateString() }}</p>
+                                    </div>
+                                    <div v-if="!promoMedicines || promoMedicines.length === 0" 
+                                        class="text-center text-gray-500 py-4">
+                                        No medicines available at the moment.
                                     </div>
                                 </div>
                             </div>

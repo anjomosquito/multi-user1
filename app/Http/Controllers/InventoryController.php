@@ -91,10 +91,11 @@ class InventoryController extends Controller
             ->get();
 
         // Get medicines with special prices
-        $promoMedicines = Medicine::whereRaw('mprice < hprice * 0.8')
+        $promoMedicines = Medicine::with('category')
             ->where('quantity', '>', 0)
+            ->where('status', '!=', 'disabled')
             ->latest()
-            ->take(4)
+            ->take(5)
             ->get();
 
         $totalSpent = Purchase::where('user_id', $user->id)

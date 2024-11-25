@@ -90,6 +90,12 @@ onMounted(() => {
                                         {{ unreadCount }}
                                     </span>
                                 </NavLink>
+
+                                <NavLink :href="route('announcements.index')" :active="route().current('announcements.index')">
+                                    <i class="fas fa-bullhorn text-blue-500"
+                                        style="font-size: 25px; width: 30px; height: 30px"></i>
+                                    Announcements
+                                </NavLink>
                             </div>
                         </div>
 
@@ -153,12 +159,20 @@ onMounted(() => {
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Dashboard
                         </ResponsiveNavLink>
-                    </div>
-
-                    <div class="pt-2 pb-3 space-y-1">
-                        <ResponsiveNavLink :href="route('medicines.index')"
-                            :active="route().current('medicines.index')">
+                        <ResponsiveNavLink :href="route('medicines.index')" :active="route().current('medicines.index')">
                             Medicines
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('cart.index')" :active="route().current('cart.index')">
+                            Cart
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('purchase.index')" :active="route().current('purchase.index')">
+                            Purchase
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('chat.index')" :active="route().current('chat.index')">
+                            Chat Support
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('announcements.index')" :active="route().current('announcements.index')">
+                            Announcements
                         </ResponsiveNavLink>
                     </div>
 
