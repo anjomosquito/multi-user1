@@ -124,7 +124,7 @@
                     {{ purchase.payment_status === 'rejected' ? 'Upload New Payment Proof' : 'Upload Payment Proof' }}
                   </button>
                   <div v-if="purchase.payment_proof_url" class="text-sm text-gray-500">
-                    Previous proof: 
+                    Payment Proof: 
                     <a :href="purchase.payment_proof_url" target="_blank" class="text-indigo-600 hover:text-indigo-800">
                       View
                     </a>

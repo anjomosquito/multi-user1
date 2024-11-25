@@ -6,40 +6,40 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Spatie\Activitylog\Models\Activity;
+use Carbon\Carbon;
 
 class ActivityLogController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Activity::with('causer')->latest();
+        $query = Activity::with('causer')
+            ->latest();
 
-        // Filter by log name if provided
-        if ($request->has('log_name') && $request->log_name !== '') {
-            $query->where('log_name', $request->log_name);
+        // Apply search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhereHas('causer', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhere('properties', 'like', "%{$search}%");
+            });
         }
 
-        // Filter by date range if provided
-        if ($request->has('start_date') && $request->start_date !== '') {
+        // Apply date range filter
+        if ($request->filled('start_date')) {
             $query->whereDate('created_at', '>=', $request->start_date);
         }
-        if ($request->has('end_date') && $request->end_date !== '') {
+        if ($request->filled('end_date')) {
             $query->whereDate('created_at', '<=', $request->end_date);
         }
 
-        // Search in description
-        if ($request->has('search') && $request->search !== '') {
-            $query->where('description', 'like', "%{$request->search}%");
-        }
-
-        $activities = $query->paginate(15)->withQueryString();
-
-        // Get unique log names for the filter dropdown
-        $logNames = Activity::distinct()->pluck('log_name');
+        $activities = $query->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('Admin/ActivityLog/Index', [
             'activities' => $activities,
-            'logNames' => $logNames,
-            'filters' => $request->only(['search', 'log_name', 'start_date', 'end_date'])
         ]);
     }
 }

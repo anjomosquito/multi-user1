@@ -2,14 +2,17 @@
 .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 3px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 3px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
@@ -77,44 +80,44 @@ const searchResults = ref(props.searchResults || { medicines: [], purchases: [],
 
 // Format date to readable format
 function formatDate(dateString) {
-  return new Date(dateString).toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+    return new Date(dateString).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
 // Calculate days until expiry
 function getDaysUntilExpiry(expiryDate) {
-  const today = new Date();
-  const expiry = new Date(expiryDate);
-  const diffTime = expiry - today;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    const diffTime = expiry - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
 }
 
 // Get action needed based on expiry and stock
 function getActionNeeded(medicine) {
-  const daysUntilExpiry = getDaysUntilExpiry(medicine.expdate);
-  if (daysUntilExpiry <= 0) return 'Remove';
-  if (daysUntilExpiry <= 7) return 'Discount Sale';
-  if (medicine.quantity <= 10) return 'Restock';
-  return 'Monitor';
+    const daysUntilExpiry = getDaysUntilExpiry(medicine.expdate);
+    if (daysUntilExpiry <= 0) return 'Remove';
+    if (daysUntilExpiry <= 7) return 'Discount Sale';
+    if (medicine.quantity <= 10) return 'Restock';
+    return 'Monitor';
 }
 
 // Debounce function
 function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
     };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
 }
 
 // Handle search with debounce
@@ -149,124 +152,124 @@ watch(searchQuery, () => {
 
 // Handle restock action
 const handleRestock = (medicine) => {
-  router.post(route('admin.inventory.restock'), {
-    medicine_id: medicine.id,
-    quantity: 50 // Default restock quantity
-  }, {
-    preserveState: true,
-    preserveScroll: true,
-    onSuccess: () => {
-      // Show success message
-      alert('Restock order created successfully');
-    }
-  });
+    router.post(route('admin.inventory.restock'), {
+        medicine_id: medicine.id,
+        quantity: 50 // Default restock quantity
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            // Show success message
+            alert('Restock order created successfully');
+        }
+    });
 };
 
 // Handle discount action
 const handleDiscount = (medicine) => {
-  const discountPercent = 20; // Default 20% discount
-  router.post(route('admin.inventory.discount'), {
-    medicine_id: medicine.id,
-    discount_percent: discountPercent
-  }, {
-    preserveState: true,
-    preserveScroll: true,
-    onSuccess: () => {
-      // Show success message
-      alert('Discount applied successfully');
-    }
-  });
+    const discountPercent = 20; // Default 20% discount
+    router.post(route('admin.inventory.discount'), {
+        medicine_id: medicine.id,
+        discount_percent: discountPercent
+    }, {
+        preserveState: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            // Show success message
+            alert('Discount applied successfully');
+        }
+    });
 };
 
 // Setup revenue chart
 let revenueChart = null;
 
 onMounted(() => {
-  const ctx = document.getElementById('revenueChart');
-  if (ctx) {
-    if (revenueChart) {
-      revenueChart.destroy();
-    }
-
-    // Process revenue data
-    const labels = props.revenueData?.map(item => formatDate(item.date)) || [];
-    const values = props.revenueData?.map(item => item.total) || [];
-
-    revenueChart = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Daily Revenue',
-          data: values,
-          backgroundColor: 'rgba(34, 197, 94, 0.2)',
-          borderColor: 'rgb(34, 197, 94)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
-            }
-          },
-          title: {
-            display: true,
-            text: 'Daily Revenue Trend',
-            color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              callback: function(value) {
-                return '₱' + value.toLocaleString();
-              },
-              color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
-            },
-            grid: {
-              color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-            }
-          },
-          x: {
-            ticks: {
-              color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
-            },
-            grid: {
-              color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-            }
-          }
+    const ctx = document.getElementById('revenueChart');
+    if (ctx) {
+        if (revenueChart) {
+            revenueChart.destroy();
         }
-      }
-    });
-  }
+
+        // Process revenue data
+        const labels = props.revenueData?.map(item => formatDate(item.date)) || [];
+        const values = props.revenueData?.map(item => item.total) || [];
+
+        revenueChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Daily Revenue',
+                    data: values,
+                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                    borderColor: 'rgb(34, 197, 94)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Daily Revenue Trend',
+                        color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                return '₱' + value.toLocaleString();
+                            },
+                            color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                        },
+                        grid: {
+                            color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: document.documentElement.classList.contains('dark') ? '#fff' : '#000'
+                        },
+                        grid: {
+                            color: document.documentElement.classList.contains('dark') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    }
 });
 
 // Watch for dark mode changes to update chart
 watch(() => document.documentElement.classList.contains('dark'), (isDark) => {
-  if (revenueChart) {
-    revenueChart.options.plugins.title.color = isDark ? '#fff' : '#000';
-    revenueChart.options.plugins.legend.labels.color = isDark ? '#fff' : '#000';
-    revenueChart.options.scales.y.ticks.color = isDark ? '#fff' : '#000';
-    revenueChart.options.scales.x.ticks.color = isDark ? '#fff' : '#000';
-    revenueChart.update();
-  }
+    if (revenueChart) {
+        revenueChart.options.plugins.title.color = isDark ? '#fff' : '#000';
+        revenueChart.options.plugins.legend.labels.color = isDark ? '#fff' : '#000';
+        revenueChart.options.scales.y.ticks.color = isDark ? '#fff' : '#000';
+        revenueChart.options.scales.x.ticks.color = isDark ? '#fff' : '#000';
+        revenueChart.update();
+    }
 }, { immediate: true });
 
 // Calculate previous period average
 const previousPeriodAverage = computed(() => {
     if (!props.revenueData || props.revenueData.length === 0) return 0;
-    
+
     const midPoint = Math.floor(props.revenueData.length / 2);
     const previousPeriodData = props.revenueData.slice(0, midPoint);
-    
+
     if (previousPeriodData.length === 0) return 0;
-    
+
     const sum = previousPeriodData.reduce((acc, item) => acc + item.total, 0);
     return sum / previousPeriodData.length;
 });
@@ -299,69 +302,70 @@ const chartOptions = {
 
 // Add advanced filtering options
 const filters = reactive({
-  date_range: 'last_30_days',
-  category: 'all',
-  status: 'all',
-  sort_by: 'date',
-  sort_order: 'desc'
+    date_range: 'last_30_days',
+    category: 'all',
+    status: 'all',
+    sort_by: 'date',
+    sort_order: 'desc'
 });
 
 // Add search suggestions
 const searchSuggestions = computed(() => {
-  if (searchQuery.value.length < 2) return [];
-  return [
-    ...recentSearches.value,
-    ...popularItems.value.filter(item => 
-      item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-  ].slice(0, 5);
+    if (searchQuery.value.length < 2) return [];
+    return [
+        ...recentSearches.value,
+        ...popularItems.value.filter(item =>
+            item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+        )
+    ].slice(0, 5);
 });
 
 // Format date to readable format
 function formatLogDate(dateString) {
-  return new Date(dateString).toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+    return new Date(dateString).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
 // Format log name
 function formatLogName(name) {
-  if (!name) return 'System';
-  return name.charAt(0).toUpperCase() + name.slice(1);
+    if (!name) return 'System';
+    return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 // Format key
 function formatKey(key) {
-  return key.split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+    return key.split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 }
 
 // Format value
 function formatValue(value) {
-  if (value === null || value === undefined) return 'N/A';
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  if (typeof value === 'object') return JSON.stringify(value);
-  return value;
+    if (value === null || value === undefined) return 'N/A';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return value;
 }
 
 // Get log type class
 function getLogTypeClass(logName) {
-  const classes = {
-    announcement: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100',
-    medicine: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100',
-    purchase: 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100',
-    default: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
-  };
-  return classes[logName] || classes.default;
+    const classes = {
+        announcement: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100',
+        medicine: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100',
+        purchase: 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100',
+        default: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
+    };
+    return classes[logName] || classes.default;
 }
 </script>
 
 <template>
+
     <Head title="Admin Dashboard" />
 
     <AuthenticatedLayout>
@@ -374,46 +378,43 @@ function getLogTypeClass(logName) {
                 <!-- Search Bar -->
                 <div class="mb-4 relative">
                     <div class="relative">
-                        <input 
-                            type="text" 
-                            placeholder="Search medicines, purchases, or users..." 
+                        <input type="text" placeholder="Search medicines, purchases, or users..."
                             class="w-full px-4 py-2 pl-10 pr-4 rounded-lg border focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            v-model="searchQuery"
-                            @input="handleSearch"
-                        >
+                            v-model="searchQuery" @input="handleSearch">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
                     </div>
                     <!-- Search Results -->
-                    <div v-if="searchQuery.length >= 2 && !isLoading" class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700">
-                        <div v-if="searchResults.medicines?.length || searchResults.purchases?.length || searchResults.users?.length" class="p-4">
+                    <div v-if="searchQuery.length >= 2 && !isLoading"
+                        class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700">
+                        <div v-if="searchResults.medicines?.length || searchResults.purchases?.length || searchResults.users?.length"
+                            class="p-4">
                             <!-- Medicines -->
                             <div v-if="searchResults.medicines?.length" class="mb-4">
                                 <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Medicines</h3>
                                 <div class="space-y-2">
-                                    <Link 
-                                        v-for="medicine in searchResults.medicines" 
-                                        :key="medicine.id"
+                                    <Link v-for="medicine in searchResults.medicines" :key="medicine.id"
                                         :href="route('admin.inventory.index')"
-                                        class="block p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
-                                    >
-                                        <div class="flex justify-between items-center">
-                                            <div>
-                                                <p class="font-medium text-gray-900 dark:text-white">{{ medicine.name }}</p>
-                                                <p class="text-sm text-gray-500 dark:text-gray-400">
-                                                    Dosage: {{ medicine.dosage }} | Stock: {{ medicine.quantity }}
-                                                </p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="font-medium text-gray-900 dark:text-white">₱{{ medicine.price }}</p>
-                                                <p class="text-sm text-gray-500 dark:text-gray-400">
-                                                    Expires: {{ formatDate(medicine.expdate) }}
-                                                </p>
-                                            </div>
+                                        class="block p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white">{{ medicine.name }}</p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                Dosage: {{ medicine.dosage }} | Stock: {{ medicine.quantity }}
+                                            </p>
                                         </div>
+                                        <div class="text-right">
+                                            <p class="font-medium text-gray-900 dark:text-white">₱{{ medicine.price }}
+                                            </p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                Expires: {{ formatDate(medicine.expdate) }}
+                                            </p>
+                                        </div>
+                                    </div>
                                     </Link>
                                 </div>
                             </div>
@@ -422,26 +423,25 @@ function getLogTypeClass(logName) {
                             <div v-if="searchResults.purchases?.length" class="mb-4">
                                 <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Purchases</h3>
                                 <div class="space-y-2">
-                                    <Link 
-                                        v-for="purchase in searchResults.purchases" 
-                                        :key="purchase.id"
+                                    <Link v-for="purchase in searchResults.purchases" :key="purchase.id"
                                         :href="route('admin.purchase.show', purchase.id)"
-                                        class="block p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
-                                    >
-                                        <div class="flex justify-between items-center">
-                                            <div>
-                                                <p class="font-medium text-gray-900 dark:text-white">Order #{{ purchase.id }}</p>
-                                                <p class="text-sm text-gray-500 dark:text-gray-400">
-                                                    By: {{ purchase.user }}
-                                                </p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="font-medium text-gray-900 dark:text-white">₱{{ purchase.total }}</p>
-                                                <p class="text-sm text-gray-500 dark:text-gray-400">
-                                                    {{ formatDate(purchase.created_at) }}
-                                                </p>
-                                            </div>
+                                        class="block p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white">Order #{{ purchase.id
+                                                }}</p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                By: {{ purchase.user }}
+                                            </p>
                                         </div>
+                                        <div class="text-right">
+                                            <p class="font-medium text-gray-900 dark:text-white">₱{{ purchase.total }}
+                                            </p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                {{ formatDate(purchase.created_at) }}
+                                            </p>
+                                        </div>
+                                    </div>
                                     </Link>
                                 </div>
                             </div>
@@ -450,23 +450,20 @@ function getLogTypeClass(logName) {
                             <div v-if="searchResults.users?.length" class="mb-4">
                                 <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Users</h3>
                                 <div class="space-y-2">
-                                    <Link 
-                                        v-for="user in searchResults.users" 
-                                        :key="user.id"
+                                    <Link v-for="user in searchResults.users" :key="user.id"
                                         :href="route('admin.users.index')"
-                                        class="block p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg"
-                                    >
-                                        <div class="flex justify-between items-center">
-                                            <div>
-                                                <p class="font-medium text-gray-900 dark:text-white">{{ user.name }}</p>
-                                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="text-sm text-gray-500 dark:text-gray-400">
-                                                    Joined: {{ formatDate(user.created_at) }}
-                                                </p>
-                                            </div>
+                                        class="block p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <div>
+                                            <p class="font-medium text-gray-900 dark:text-white">{{ user.name }}</p>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</p>
                                         </div>
+                                        <div class="text-right">
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                Joined: {{ formatDate(user.created_at) }}
+                                            </p>
+                                        </div>
+                                    </div>
                                     </Link>
                                 </div>
                             </div>
@@ -477,7 +474,8 @@ function getLogTypeClass(logName) {
                     </div>
 
                     <!-- Loading State -->
-                    <div v-if="isLoading" class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 p-4">
+                    <div v-if="isLoading"
+                        class="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border dark:border-gray-700 p-4">
                         <div class="animate-pulse flex space-x-4">
                             <div class="flex-1 space-y-4 py-1">
                                 <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
@@ -495,82 +493,92 @@ function getLogTypeClass(logName) {
                     <!-- Total Medicines -->
                     <div class="col-span-12 md:col-span-3">
                         <Link :href="route('admin.inventory.index')" class="block">
-                            <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
-                                <div class="p-6 text-gray-900 dark:text-gray-100">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Total Medicines</h3>
-                                            <p class="text-3xl font-bold mt-2">{{ props.totalMedicines }}</p>
-                                        </div>
-                                        <div class="p-3 bg-blue-100 rounded-full">
-                                            <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-9 0a2 2 0 012-2v-6a2 2 0 012-2v6a2 2 0 012 2m9 0h1m-1 0h1m-1 0h1m1 0h1m-1 0a2 2 0 01-2-2V5a2 2 0 00-2-2H3a2 2 0 00-2 2v12a2 2 0 002 2 18h15a2 2 0 002-2v-5" />
-                                            </svg>
-                                        </div>
+                        <div
+                            class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
+                            <div class="p-6 text-gray-900 dark:text-gray-100">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Total Medicines</h3>
+                                        <p class="text-3xl font-bold mt-2">{{ props.totalMedicines }}</p>
+                                    </div>
+                                    <div class="p-3 bg-blue-100 rounded-full">
+                                        <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5m-9 0a2 2 0 012-2v-6a2 2 0 012-2v6a2 2 0 012 2m9 0h1m-1 0h1m-1 0h1m1 0h1m-1 0a2 2 0 01-2-2V5a2 2 0 00-2-2H3a2 2 0 00-2 2v12a2 2 0 002 2 18h15a2 2 0 002-2v-5" />
+                                        </svg>
                                     </div>
                                 </div>
                             </div>
+                        </div>
                         </Link>
                     </div>
 
                     <!-- Total Purchases -->
                     <div class="col-span-12 md:col-span-3">
                         <Link :href="route('admin.purchase.index')" class="block">
-                            <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
-                                <div class="p-6 text-gray-900 dark:text-gray-100">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Total Purchases</h3>
-                                            <p class="text-3xl font-bold mt-2">{{ props.totalPurchases }}</p>
-                                        </div>
-                                        <div class="p-3 bg-green-100 rounded-full">
-                                            <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                            </svg>
-                                        </div>
+                        <div
+                            class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
+                            <div class="p-6 text-gray-900 dark:text-gray-100">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Total Purchases</h3>
+                                        <p class="text-3xl font-bold mt-2">{{ props.totalPurchases }}</p>
+                                    </div>
+                                    <div class="p-3 bg-green-100 rounded-full">
+                                        <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                        </svg>
                                     </div>
                                 </div>
                             </div>
+                        </div>
                         </Link>
                     </div>
 
                     <!-- Low Stock Alert -->
                     <div class="col-span-12 md:col-span-3">
                         <Link :href="route('admin.inventory.index')" class="block">
-                            <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
-                                <div class="p-6 text-gray-900 dark:text-gray-100">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <h3 class="text-lg font-semibold">Low Stock Items</h3>
-                                            <p class="text-3xl font-bold mt-2 text-red-500">{{ props.lowStockCount }}</p>
-                                        </div>
-                                        <div class="p-3 bg-red-100 rounded-full">
-                                            <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                            </svg>
-                                        </div>
+                        <div
+                            class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
+                            <div class="p-4 text-gray-900 dark:text-gray-100">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold">Low Stock Items</h3>
+                                        <p class="text-3xl font-bold mt-2 text-red-500">{{ props.lowStockCount }}</p>
                                     </div>
-                                    <div class="mt-4 space-y-2">
-                                        <div v-for="medicine in props.lowStockMedicines?.slice(0, 3)" :key="medicine.id"
-                                            class="flex justify-between items-center p-2 bg-red-50 rounded-md">
-                                            <div class="flex-1">
-                                                <p class="font-medium truncate">{{ medicine.name }}</p>
-                                                <p class="text-xs text-gray-500">Stock: {{ medicine.quantity }}</p>
-                                            </div>
-                                            <button @click="handleRestock(medicine)"
-                                                class="px-3 py-1 text-sm text-white bg-red-500 hover:bg-red-600 rounded-md">
-                                                Restock
-                                            </button>
+                                    <div class="p-3 bg-red-100 rounded-full">
+                                        <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="mt-4 space-y-2">
+                                    <div v-for="medicine in props.lowStockMedicines?.slice(0, 3)" :key="medicine.id"
+                                        class="flex justify-between items-center p-2 bg-red-50 rounded-md">
+                                        <div class="flex-1">
+                                            <p class="font-medium truncate">{{ medicine.name }}</p>
+                                            <p class="text-xs text-gray-500">Stock: {{ medicine.quantity }}</p>
                                         </div>
+                                        <button @click="handleRestock(medicine)"
+                                            class="px-3 py-1 text-sm text-white bg-red-500 hover:bg-red-600 rounded-md">
+                                            Restock
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+                        </div>
                         </Link>
                     </div>
 
                     <!-- Total Revenue -->
                     <div class="col-span-12 md:col-span-3">
-                        <div class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
+                        <div
+                            class="mt-4 bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
                             <div class="p-6 text-gray-900 dark:text-gray-100">
                                 <div class="flex items-center justify-between">
                                     <div>
@@ -578,8 +586,10 @@ function getLogTypeClass(logName) {
                                         <p class="text-3xl font-bold mt-2 text-green-500">₱{{ props.totalRevenue }}</p>
                                     </div>
                                     <div class="p-3 bg-green-100 rounded-full">
-                                        <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     </div>
                                 </div>
@@ -592,12 +602,14 @@ function getLogTypeClass(logName) {
                 <div class="grid grid-cols-12 gap-4 mt-4">
                     <!-- Recent Announcements -->
                     <div class="col-span-12 md:col-span-4">
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
+                        <div
+                            class="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg h-full">
                             <div class="p-6">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-lg font-semibold">Recent Announcements</h3>
-                                    <Link :href="route('admin.announcements.index')" class="text-blue-500 hover:text-blue-700 text-sm">
-                                        View All →
+                                    <Link :href="route('admin.announcements.index')"
+                                        class="text-blue-500 hover:text-blue-700 text-sm">
+                                    View All →
                                     </Link>
                                 </div>
                                 <div class="space-y-3 overflow-y-auto max-h-[400px] custom-scrollbar">
@@ -605,12 +617,15 @@ function getLogTypeClass(logName) {
                                         <div v-for="announcement in announcements" :key="announcement.id"
                                             class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
                                             <Link :href="route('admin.announcements.show', announcement.id)">
-                                                <h4 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100">{{ announcement.title }}</h4>
-                                                <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">{{ announcement.content }}</p>
-                                                <div class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                                                    <span>By {{ announcement.admin?.name || 'Unknown' }}</span>
-                                                    <span>{{ formatDate(announcement.created_at) }}</span>
-                                                </div>
+                                            <h4 class="font-medium text-lg mb-2 text-gray-900 dark:text-gray-100">{{
+                                                announcement.title }}</h4>
+                                            <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-2 mb-3">{{
+                                                announcement.content }}</p>
+                                            <div
+                                                class="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+                                                <span>By {{ announcement.admin?.name || 'Unknown' }}</span>
+                                                <span>{{ formatDate(announcement.created_at) }}</span>
+                                            </div>
                                             </Link>
                                         </div>
                                     </div>
@@ -624,22 +639,24 @@ function getLogTypeClass(logName) {
 
                     <!-- Recent Purchases -->
                     <div class="col-span-12 md:col-span-4">
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
+                        <div
+                            class="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg h-full">
                             <div class="p-6">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-lg font-semibold">Recent Purchases</h3>
-                                    <Link :href="route('admin.purchase.index')" class="text-blue-500 hover:text-blue-700 text-sm">
-                                        View All →
+                                    <Link :href="route('admin.purchase.index')"
+                                        class="text-blue-500 hover:text-blue-700 text-sm">
+                                    View All →
                                     </Link>
                                 </div>
-                                <!-- Scrollable Container -->
                                 <div class="space-y-3 overflow-y-auto max-h-[400px] custom-scrollbar">
-                                    <div v-for="purchase in props.recentPurchases" :key="purchase.id" 
+                                    <div v-for="purchase in props.recentPurchases" :key="purchase.id"
                                         class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
                                         <div class="flex justify-between items-start">
                                             <div class="flex-1">
                                                 <div class="flex items-center space-x-2">
-                                                    <span class="font-medium">{{ purchase.user?.name || purchase.name || 'Unknown User' }}</span>
+                                                    <span class="font-medium">{{ purchase.user?.name || purchase.name ||
+                                                        'Unknown User' }}</span>
                                                     <span :class="{
                                                         'px-2 py-1 rounded-full text-xs font-medium': true,
                                                         'bg-yellow-100 text-yellow-800': purchase.status === 'pending',
@@ -649,7 +666,8 @@ function getLogTypeClass(logName) {
                                                         {{ purchase.status }}
                                                     </span>
                                                 </div>
-                                                <p class="text-sm text-gray-500 mt-1">{{ formatDate(purchase.created_at) }}</p>
+                                                <p class="text-sm text-gray-500 mt-1">{{ formatDate(purchase.created_at)
+                                                    }}</p>
                                             </div>
                                             <div class="text-right">
                                                 <span class="text-sm font-medium">${{ purchase.total_amount }}</span>
@@ -661,22 +679,20 @@ function getLogTypeClass(logName) {
                         </div>
                     </div>
 
-                    <!-- Recent Activity -->
-                    
-
                     <!-- Expiring Medicines -->
                     <div class="col-span-12 md:col-span-4">
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg">
+                        <div
+                            class="bg-white dark:bg-gray-800 shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg h-full">
                             <div class="p-6">
                                 <div class="flex justify-between items-center mb-4">
                                     <h3 class="text-lg font-semibold">Expiring Medicines</h3>
-                                    <Link :href="route('admin.inventory.index')" class="text-blue-500 hover:text-blue-700 text-sm">
-                                        View All →
+                                    <Link :href="route('admin.inventory.index')"
+                                        class="text-blue-500 hover:text-blue-700 text-sm">
+                                    View All →
                                     </Link>
                                 </div>
-                                <!-- Scrollable Container -->
                                 <div class="space-y-3 overflow-y-auto max-h-[400px] custom-scrollbar">
-                                    <div v-for="medicine in props.expiringMedicines" :key="medicine.id" 
+                                    <div v-for="medicine in props.expiringMedicines" :key="medicine.id"
                                         class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
                                         <div class="flex justify-between items-start">
                                             <div class="flex-1">
@@ -706,23 +722,29 @@ function getLogTypeClass(logName) {
                                                     </p>
                                                     <p class="text-sm">
                                                         <span class="text-gray-600 dark:text-gray-400">Action:</span>
-                                                        <span class="font-medium ml-1">{{ getActionNeeded(medicine) }}</span>
+                                                        <span class="font-medium ml-1">{{ getActionNeeded(medicine)
+                                                            }}</span>
                                                     </p>
                                                 </div>
                                             </div>
                                             <div class="flex space-x-2">
-                                                <button @click="handleRestock(medicine)" 
-                                                    class="p-2 hover:bg-blue-100 rounded-full transition-colors duration-200" 
+                                                <button @click="handleRestock(medicine)"
+                                                    class="p-2 hover:bg-blue-100 rounded-full transition-colors duration-200"
                                                     title="Restock">
-                                                    <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                                    <svg class="h-5 w-5 text-blue-600" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M12 4v16m8-8H4" />
                                                     </svg>
                                                 </button>
-                                                <button @click="handleDiscount(medicine)" 
-                                                    class="p-2 hover:bg-green-100 rounded-full transition-colors duration-200" 
+                                                <button @click="handleDiscount(medicine)"
+                                                    class="p-2 hover:bg-green-100 rounded-full transition-colors duration-200"
                                                     title="Apply Discount">
-                                                    <svg class="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    <svg class="h-5 w-5 text-green-600" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                     </svg>
                                                 </button>
                                             </div>
@@ -735,77 +757,53 @@ function getLogTypeClass(logName) {
                 </div>
 
                 <!-- Recent Activity -->
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg mt-6">
-                    <div class="p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h2>
-                            <Link 
-                                :href="route('admin.activity-log.index')"
-                                class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                            >
-                                View All →
-                            </Link>
+                <div class="mt-4 col-span-12 md:col-span-4">
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg sm:rounded-lg">
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h3>
                         </div>
-                        <div class="overflow-x-auto max-h-[400px] custom-scrollbar">
-                            <table class="w-full whitespace-nowrap">
-                                <thead class="sticky top-0 bg-white dark:bg-gray-800">
-                                    <tr class="text-left font-bold border-b dark:border-gray-700">
-                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">Description</th>
-                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">Type</th>
-                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">User</th>
-                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">Date</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                                    <tr v-for="activity in props.recentActivities" 
-                                        :key="activity.id" 
-                                        class="hover:bg-gray-50 dark:hover:bg-gray-700"
-                                    >
-                                        <td class="px-6 py-4">
-                                            <div class="font-medium text-gray-900 dark:text-gray-100">
+                        <div class="custom-scrollbar overflow-y-auto" style="max-height: 400px;">
+                            <div class="px-4 pb-4 space-y-4">
+                                <div v-for="activity in props.recentActivities" :key="activity.id" 
+                                    class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                                 {{ activity.description }}
+                                            </p>
+                                            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                                <span>{{ formatLogDate(activity.created_at) }}</span>
+                                                <span class="mx-1">•</span>
+                                                <span>{{ activity.causer ? activity.causer.name : 'System' }}</span>
                                             </div>
                                             <div v-if="activity.properties && Object.keys(activity.properties).length > 0" 
-                                                 class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                                <div v-for="(value, key) in activity.properties" :key="key">
-                                                    <strong>{{ formatKey(key) }}:</strong> {{ formatValue(value) }}
+                                                class="mt-2 text-xs space-y-1">
+                                                <div v-for="(value, key) in activity.properties" :key="key" 
+                                                    class="text-gray-600 dark:text-gray-300">
+                                                    <span class="font-medium">{{ formatKey(key) }}:</span>
+                                                    <span class="ml-1">{{ formatValue(value) }}</span>
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <span class="px-3 py-1 rounded-full text-xs font-medium"
-                                                  :class="getLogTypeClass(activity.log_name)">
-                                                {{ formatLogName(activity.log_name) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">
-                                            {{ activity.causer ? activity.causer.name : 'System' }}
-                                        </td>
-                                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">
-                                            {{ formatDate(activity.created_at) }}
-                                        </td>
-                                    </tr>
-                                    <tr v-if="!props.recentActivities || props.recentActivities.length === 0">
-                                        <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                                            No recent activities found.
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Revenue Chart -->
                 <div class="mt-4">
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg p-6">
+                    <div
+                        class="bg-white dark:bg-gray-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 sm:rounded-lg p-6">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Revenue Trend</h3>
                         </div>
                         <div class="h-[300px]">
                             <canvas id="revenueChart"></canvas>
                         </div>
-                        <div v-if="!props.revenueData?.length" class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                        <div v-if="!props.revenueData?.length"
+                            class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
                             No revenue data available
                         </div>
                     </div>

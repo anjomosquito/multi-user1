@@ -17,7 +17,7 @@ const showingNavigationDropdown = ref(false);
 <template>
     <div>
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
-            <nav class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+            <nav class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 sticky top-0 z-50">
                 <!-- Primary Navigation Menu -->
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16">
@@ -25,83 +25,68 @@ const showingNavigationDropdown = ref(false);
                             <!-- Logo -->
                             <div class="shrink-0 flex items-center">
                                 <Link :href="route('admin.dashboard')">
-                                <ApplicationLogo
-                                    class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
+                                    <ApplicationLogo class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
                                 </Link>
                             </div>
 
                             <!-- Navigation Links -->
-                            <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                                <NavLink :href="route('admin.dashboard')" :active="route().current('admin.dashboard')">
-                                    <svg width="40px" height="40px" viewBox="0 0 24 24" id="dashboard"
-                                        xmlns="http://www.w3.org/2000/svg" class="icon multi-color">
-                                        <path id="secondary-fill"
-                                            d="M9,12H4a1,1,0,0,1-1-1V6h7v5A1,1,0,0,1,9,12Zm12,8V15H14v5a1,1,0,0,0,1,1h5A1,1,0,0,0,21,20Z"
-                                            style="fill: rgb(44, 169, 188); stroke-width: 2;"></path>
-                                        <path id="tertiary-fill"
-                                            d="M9,21H4a1,1,0,0,1-1-1V19h7v1A1,1,0,0,1,9,21ZM21,7V6H14V7a1,1,0,0,0,1,1h5A1,1,0,0,0,21,7Z"
-                                            style="fill: #b7b7b7; stroke-width: 2;"></path>
-                                        <path id="primary-stroke"
-                                            d="M9,12H4a1,1,0,0,1-1-1V4A1,1,0,0,1,4,3H9a1,1,0,0,1,1,1v7A1,1,0,0,1,9,12ZM21,7V4a1,1,0,0,0-1-1H15a1,1,0,0,0-1,1V7a1,1,0,0,0,1,1h5A1,1,0,0,0,21,7ZM10,20V17a1,1,0,0,0-1-1H4a1,1,0,0,0-1,1v3a1,1,0,0,0,1,1H9A1,1,0,0,0,10,20Zm11,0V13a1,1,0,0,0-1-1H15a1,1,0,0,0-1,1v7a1,1,0,0,0,1,1h5A1,1,0,0,0,21,20Z"
-                                            style="fill: none; stroke: rgb(0, 0, 0); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;">
-                                        </path>
-                                    </svg>
+                            <div class="hidden sm:-my-px sm:ml-10 sm:flex overflow-x-auto space-x-4 items-center pb-2" style="scrollbar-width: none;">
+                                <!-- Dashboard -->
+                                <NavLink :href="route('admin.dashboard')" :active="route().current('admin.dashboard')" class="whitespace-nowrap">
+                                    <i class="fas fa-home text-blue-500 mr-1" style="font-size: 20px;"></i>
                                     Dashboard
                                 </NavLink>
 
-                                <NavLink :href="route('admin.medicines.index')"
-                                    :active="route().current('admin.medicines.index')">
-                                    <i class="fas fa-capsules text-green-500"
-                                        style="font-size: 25px; width: 30px; height: 30px"></i>
-                                    Medicines
-                                </NavLink>
-
-                                <NavLink :href="route('admin.inventory.index')"
-                                    :active="route().current('admin.inventory.index')">
-                                    <i class="fas fa-box text-purple-500"
-                                        style="font-size: 25px; width: 30px; height: 30px"></i>
-                                    Inventory
-                                </NavLink>
-
-                                <NavLink :href="route('admin.categories.index')"
-                                    :active="route().current('admin.categories.index')">
-                                    <i class="fas fa-list-alt text-blue-500"
-                                        style="font-size: 25px; width: 30px; height: 30px"></i>
-                                    Categories
-                                </NavLink>
-
-                                <NavLink :href="route('admin.chat.index')"
-                                    :active="route().current('admin.chat.index')">
-                                    <i class="fas fa-comments text-orange-500"
-                                        style="font-size: 25px; width: 30px; height: 30px"></i>
-
-                                    Chat
-                                </NavLink>
-
-                                <NavLink :href="route('admin.announcements.index')"
-                                    :active="route().current('admin.announcements.index')">
-                                    <i class="fas fa-bullhorn text-yellow-500"
-                                        style="font-size: 25px; width: 30px; height: 30px"></i>
-                                    Announcements
-                                </NavLink>
-
-                                <NavLink :href="route('admin.users.index')"
-                                    :active="route().current('admin.users.index')">
-                                    <i class="fas fa-users text-teal-500"
-                                        style="font-size: 25px; width: 30px; height: 30px"></i>
-
-                                    Users
-                                </NavLink>
-
-                                <NavLink :href="route('admin.purchase.index')"
-                                    :active="route().current('admin.purchase.index')">
-                                    <i class="fas fa-shopping-cart text-yellow-500"
-                                        style="font-size: 25px; width: 30px; height: 30px"></i>
-                                    Purchases
-                                </NavLink>
-                                <NavLink :href="route('admin.activity-log.index')" :active="route().current('admin.activity-log.index')">
-                                        Activity Log
+                                <!-- Inventory Management Group -->
+                                <div class="flex items-center space-x-4">
+                                    <NavLink :href="route('admin.medicines.index')" :active="route().current('admin.medicines.index')" class="whitespace-nowrap">
+                                        <i class="fas fa-capsules text-green-500 mr-1" style="font-size: 20px;"></i>
+                                        Medicines
                                     </NavLink>
+
+                                    <NavLink :href="route('admin.inventory.index')" :active="route().current('admin.inventory.index')" class="whitespace-nowrap">
+                                        <i class="fas fa-box text-purple-500 mr-1" style="font-size: 20px;"></i>
+                                        Inventory
+                                    </NavLink>
+
+                                    <NavLink :href="route('admin.categories.index')" :active="route().current('admin.categories.index')" class="whitespace-nowrap">
+                                        <i class="fas fa-list-alt text-blue-500 mr-1" style="font-size: 20px;"></i>
+                                        Categories
+                                    </NavLink>
+                                </div>
+
+                                <!-- Communication Group -->
+                                <div class="flex items-center space-x-4">
+                                    <NavLink :href="route('admin.chat.index')" :active="route().current('admin.chat.index')" class="whitespace-nowrap">
+                                        <i class="fas fa-comments text-orange-500 mr-1" style="font-size: 20px;"></i>
+                                        Chat
+                                    </NavLink>
+
+                                    <NavLink :href="route('admin.purchase.index')" :active="route().current('admin.purchase.index')" class="whitespace-nowrap">
+                                        <i class="fas fa-shopping-cart text-yellow-500 mr-1" style="font-size: 20px;"></i>
+                                        Purchases
+                                    </NavLink>
+                                </div>
+
+                                <!-- User Management Group -->
+                                <div class="flex items-center space-x-4">
+                                    <NavLink :href="route('admin.users.index')" :active="route().current('admin.users.index')" class="whitespace-nowrap">
+                                        <i class="fas fa-users text-indigo-500 mr-1" style="font-size: 20px;"></i>
+                                        Users
+                                    </NavLink>
+
+                                    
+                                    <NavLink :href="route('admin.announcements.index')" :active="route().current('admin.announcements.index')" class="whitespace-nowrap">
+                                        <i class="fas fa-bullhorn text-yellow-500 mr-1" style="font-size: 20px;"></i>
+                                        Announcements
+                                    </NavLink>
+                                </div>
+
+                                <!-- System Group -->
+                                <NavLink :href="route('admin.activity-log.index')" :active="route().current('admin.activity-log.index')" class="whitespace-nowrap">
+                                    <i class="fas fa-history text-gray-500 mr-1" style="font-size: 20px;"></i>
+                                    Activity Log
+                                </NavLink>
                             </div>
                         </div>
 
@@ -157,30 +142,107 @@ const showingNavigationDropdown = ref(false);
                 </div>
 
                 <!-- Responsive Navigation Menu -->
-                <div :class="{ block: showingNavigationDropdown, hidden: !showingNavigationDropdown }"
-                    class="sm:hidden">
+                <div :class="{ 'transform translate-x-0': showingNavigationDropdown, 'transform -translate-x-full': !showingNavigationDropdown }"
+                    class="sm:hidden fixed inset-0 z-50 bg-white dark:bg-gray-800 w-72 transition-transform duration-300 ease-in-out shadow-lg overflow-y-auto">
                     <div class="pt-2 pb-3 space-y-1">
-                        <ResponsiveNavLink :href="route('admin.dashboard')" :active="route().current('dashboard')">
-                            Dashboard
-                        </ResponsiveNavLink>
-                    </div>
-
-                    <!-- Responsive Settings Options -->
-                    <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
-                        <div class="px-4">
-                            <div class="font-medium text-base text-gray-800 dark:text-gray-200">
-                                {{ $page.props.auth.admin.name }}
-                            </div>
-                            <div class="font-medium text-sm text-gray-500">{{ $page.props.auth.admin.email }}</div>
+                        <!-- Mobile Logo -->
+                        <div class="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                            <ApplicationLogo class="block h-8 w-auto fill-current text-gray-800 dark:text-gray-200" />
+                            <button @click="showingNavigationDropdown = false" class="text-gray-500">
+                                <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
 
-                        <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="route('admin.profile.edit')"> Profile </ResponsiveNavLink>
-                            <ResponsiveNavLink :href="route('admin.logout')" method="post" as="button">
+                        <!-- Mobile Navigation Groups -->
+                        <div class="px-2 py-2 space-y-1">
+                            <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Main
+                            </div>
+                            <ResponsiveNavLink :href="route('admin.dashboard')" :active="route().current('admin.dashboard')" class="flex items-center">
+                                <i class="fas fa-home text-blue-500 mr-2" style="font-size: 18px;"></i>
+                                Dashboard
+                            </ResponsiveNavLink>
+                        </div>
+
+                        <div class="px-2 py-2 space-y-1">
+                            <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Inventory
+                            </div>
+                            <ResponsiveNavLink :href="route('admin.medicines.index')" :active="route().current('admin.medicines.index')" class="flex items-center">
+                                <i class="fas fa-capsules text-green-500 mr-2" style="font-size: 18px;"></i>
+                                Medicines
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('admin.inventory.index')" :active="route().current('admin.inventory.index')" class="flex items-center">
+                                <i class="fas fa-box text-purple-500 mr-2" style="font-size: 18px;"></i>
+                                Inventory
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('admin.categories.index')" :active="route().current('admin.categories.index')" class="flex items-center">
+                                <i class="fas fa-list-alt text-blue-500 mr-2" style="font-size: 18px;"></i>
+                                Categories
+                            </ResponsiveNavLink>
+                        </div>
+
+                        <div class="px-2 py-2 space-y-1">
+                            <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Communication
+                            </div>
+                            <ResponsiveNavLink :href="route('admin.chat.index')" :active="route().current('admin.chat.index')" class="flex items-center">
+                                <i class="fas fa-comments text-orange-500 mr-2" style="font-size: 18px;"></i>
+                                Chat
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('admin.announcements.index')" :active="route().current('admin.announcements.index')" class="flex items-center">
+                                <i class="fas fa-bullhorn text-yellow-500 mr-2" style="font-size: 18px;"></i>
+                                Announcements
+                            </ResponsiveNavLink>
+                        </div>
+
+                        <div class="px-2 py-2 space-y-1">
+                            <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Users & Transactions
+                            </div>
+                            <ResponsiveNavLink :href="route('admin.users.index')" :active="route().current('admin.users.index')" class="flex items-center">
+                                <i class="fas fa-users text-indigo-500 mr-2" style="font-size: 18px;"></i>
+                                Users
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('admin.purchase.index')" :active="route().current('admin.purchase.index')" class="flex items-center">
+                                <i class="fas fa-shopping-cart text-yellow-500 mr-2" style="font-size: 18px;"></i>
+                                Purchases
+                            </ResponsiveNavLink>
+                        </div>
+
+                        <div class="px-2 py-2 space-y-1">
+                            <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                System
+                            </div>
+                            <ResponsiveNavLink :href="route('admin.activity-log.index')" :active="route().current('admin.activity-log.index')" class="flex items-center">
+                                <i class="fas fa-history text-gray-500 mr-2" style="font-size: 18px;"></i>
+                                Activity Log
+                            </ResponsiveNavLink>
+                        </div>
+
+                        <!-- Profile Section -->
+                        <div class="px-2 py-2 space-y-1 border-t border-gray-200 dark:border-gray-700">
+                            <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                Account
+                            </div>
+                            <ResponsiveNavLink :href="route('admin.profile.edit')" class="flex items-center">
+                                <i class="fas fa-user text-gray-500 mr-2" style="font-size: 18px;"></i>
+                                Profile
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('admin.logout')" method="post" as="button" class="flex items-center w-full">
+                                <i class="fas fa-sign-out-alt text-gray-500 mr-2" style="font-size: 18px;"></i>
                                 Log Out
                             </ResponsiveNavLink>
                         </div>
                     </div>
+                </div>
+
+                <!-- Backdrop -->
+                <div v-if="showingNavigationDropdown" 
+                     class="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
+                     @click="showingNavigationDropdown = false">
                 </div>
             </nav>
 

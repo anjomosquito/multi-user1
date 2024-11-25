@@ -10,59 +10,45 @@
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900 dark:text-gray-100">
                         <!-- Filters -->
-                        <div class="flex flex-col sm:flex-row justify-between mb-6 gap-4">
-                            <div class="flex flex-col sm:flex-row gap-4">
-                                <!-- Search -->
-                                <div class="flex items-center">
-                                    <input
-                                        v-model="search"
-                                        type="text"
-                                        placeholder="Search in descriptions..."
-                                        class="border rounded-lg px-4 py-2 w-full sm:w-80 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                                        @input="filter"
-                                    />
-                                </div>
-                                <!-- Log Type Filter -->
-                                <div class="flex items-center">
-                                    <select
-                                        v-model="logName"
-                                        class="border rounded-lg px-4 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                                        @change="filter"
-                                    >
-                                        <option value="">All Log Types</option>
-                                        <option v-for="name in logNames" :key="name" :value="name">
-                                            {{ formatLogName(name) }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <!-- Date Range -->
-                                <div class="flex items-center space-x-2">
-                                    <input
-                                        v-model="startDate"
-                                        type="date"
-                                        class="border rounded-lg px-4 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                                        @change="filter"
-                                    />
-                                    <span class="text-gray-500">to</span>
-                                    <input
-                                        v-model="endDate"
-                                        type="date"
-                                        class="border rounded-lg px-4 py-2 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
-                                        @change="filter"
-                                    />
-                                </div>
+                        <div class="flex flex-wrap gap-3 mb-4">
+                            <!-- Search -->
+                            <div class="flex-1 min-w-[200px] max-w-xs">
+                                <input
+                                    v-model="searchQuery"
+                                    type="text"
+                                    placeholder="Search..."
+                                    class="w-full border rounded-lg px-3 py-1.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                                    @input="debouncedFilter"
+                                />
                             </div>
+                            
+                            <!-- Date Range -->
+                            <div class="flex items-center gap-2">
+                                <input
+                                    v-model="startDate"
+                                    type="date"
+                                    class="border rounded-lg px-2 py-1.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                                    @change="debouncedFilter"
+                                />
+                                <span class="text-gray-500 text-sm">to</span>
+                                <input
+                                    v-model="endDate"
+                                    type="date"
+                                    class="border rounded-lg px-2 py-1.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300"
+                                    @change="debouncedFilter"
+                                />
+                            </div>
+                            <button class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" @click="clearFilters">Clear Filters</button>
                         </div>
 
                         <!-- Activity Log Table -->
                         <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
-                            <table class="w-full whitespace-nowrap">
+                            <table class="w-full whitespace-nowrap text-sm">
                                 <thead>
-                                    <tr class="text-left font-bold bg-gray-50 dark:bg-gray-700">
-                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">Description</th>
-                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">Type</th>
-                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">User</th>
-                                        <th class="px-6 py-3 text-gray-600 dark:text-gray-200">Date</th>
+                                    <tr class="text-left font-semibold bg-gray-50 dark:bg-gray-700">
+                                        <th class="px-4 py-2 text-gray-600 dark:text-gray-200">Description</th>
+                                        <th class="px-4 py-2 text-gray-600 dark:text-gray-200 w-32">User</th>
+                                        <th class="px-4 py-2 text-gray-600 dark:text-gray-200 w-32">Date</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -70,32 +56,30 @@
                                         :key="activity.id" 
                                         class="hover:bg-gray-50 dark:hover:bg-gray-700"
                                     >
-                                        <td class="px-6 py-4">
-                                            <div class="font-medium text-gray-900 dark:text-gray-100">
+                                        <td class="px-4 py-2">
+                                            <div class="text-gray-900 dark:text-gray-100">
                                                 {{ activity.description }}
                                             </div>
                                             <div v-if="activity.properties && Object.keys(activity.properties).length > 0" 
-                                                 class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                                <div v-for="(value, key) in activity.properties" :key="key">
-                                                    <strong>{{ formatKey(key) }}:</strong> {{ formatValue(value) }}
+                                                 class="mt-1 space-y-1">
+                                                <div v-for="(value, key) in activity.properties" 
+                                                     :key="key"
+                                                     class="text-xs text-gray-500 dark:text-gray-400">
+                                                    <span class="font-medium">{{ formatKey(key) }}:</span>
+                                                    <span class="ml-1">{{ formatValue(value) }}</span>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4">
-                                            <span class="px-3 py-1 rounded-full text-xs font-medium"
-                                                  :class="getLogTypeClass(activity.log_name)">
-                                                {{ formatLogName(activity.log_name) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">
+                                        
+                                        <td class="px-4 py-2 text-gray-500 dark:text-gray-400 text-sm">
                                             {{ activity.causer ? activity.causer.name : 'System' }}
                                         </td>
-                                        <td class="px-6 py-4 text-gray-500 dark:text-gray-400">
+                                        <td class="px-4 py-2 text-gray-500 dark:text-gray-400 text-sm">
                                             {{ formatDate(activity.created_at) }}
                                         </td>
                                     </tr>
                                     <tr v-if="activities.data.length === 0">
-                                        <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
+                                        <td colspan="4" class="px-4 py-2 text-center text-gray-500 dark:text-gray-400">
                                             No activities found.
                                         </td>
                                     </tr>
@@ -113,69 +97,63 @@
 
 <script setup>
 import { ref, watch } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
+import debounce from 'lodash/debounce';
 import AdminAuthenticatedLayout from '@/Layouts/AdminAuthenticatedLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
-import { format } from 'date-fns';
-import { debounce } from 'lodash';
 
 const props = defineProps({
-    activities: Object,
-    logNames: Array,
-    filters: {
+    activities: {
         type: Object,
-        default: () => ({
-            search: '',
-            log_name: '',
-            start_date: '',
-            end_date: ''
-        })
+        required: true
     }
 });
 
-const search = ref(props.filters.search || '');
-const logName = ref(props.filters.log_name || '');
-const startDate = ref(props.filters.start_date || '');
-const endDate = ref(props.filters.end_date || '');
+const searchQuery = ref('');
+const startDate = ref('');
+const endDate = ref('');
 
-// Debounce the filter function
+// Debounced filter function
 const debouncedFilter = debounce(() => {
     router.get(
         route('admin.activity-log.index'),
-        { 
-            search: search.value,
-            log_name: logName.value,
+        {
+            search: searchQuery.value,
             start_date: startDate.value,
             end_date: endDate.value
         },
         {
             preserveState: true,
             preserveScroll: true,
-            replace: true,
+            replace: true
         }
     );
 }, 300);
 
-function filter() {
+// Watch for changes in filters
+watch([searchQuery, startDate, endDate], () => {
     debouncedFilter();
+});
+
+// Format date for display
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
-function formatDate(date) {
-    if (!date) return 'N/A';
-    return format(new Date(date), 'MMM d, yyyy HH:mm:ss');
-}
-
-function formatLogName(name) {
-    if (!name) return 'System';
-    return name.charAt(0).toUpperCase() + name.slice(1);
-}
-
+// Format key for display
 function formatKey(key) {
     return key.split('_')
         .map(word => word.charAt(0).toUpperCase() + word.slice(1))
         .join(' ');
 }
 
+// Format value for display
 function formatValue(value) {
     if (value === null || value === undefined) return 'N/A';
     if (typeof value === 'boolean') return value ? 'Yes' : 'No';
@@ -183,13 +161,11 @@ function formatValue(value) {
     return value;
 }
 
-function getLogTypeClass(logName) {
-    const classes = {
-        announcement: 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100',
-        medicine: 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100',
-        purchase: 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100',
-        default: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
-    };
-    return classes[logName] || classes.default;
+// Clear filters
+function clearFilters() {
+    searchQuery.value = '';
+    startDate.value = '';
+    endDate.value = '';
+    debouncedFilter();
 }
 </script>

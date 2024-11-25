@@ -10,7 +10,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::all(['id', 'name', 'email']);
+        $users = User::select(['id', 'name', 'email', 'created_at'])->get();
         return Inertia::render('Admin/User/Index', [
             'users' => $users,
         ]);
